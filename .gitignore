@@ -9,6 +9,7 @@ dist
 
 # reference material (kept locally, not part of the repo)
 docs/filament-5.x/
+docs/dashboard/
 
 # local tooling state
 .mimosa/
