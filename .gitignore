@@ -1,0 +1,14 @@
+node_modules
+.nuxt
+.output
+.data
+dist
+.env
+.DS_Store
+*.log
+
+# reference material (kept locally, not part of the repo)
+docs/filament-5.x/
+
+# local tooling state
+.mimosa/
