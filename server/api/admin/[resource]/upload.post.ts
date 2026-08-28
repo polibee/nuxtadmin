@@ -3,8 +3,12 @@ import { requirePermission } from '../../../utils/auth'
 
 const MAX_SIZE = 10 * 1024 * 1024 // 10MB
 
-/** multipart upload: field "file" (required) → media record + stored bytes */
+/** POST /api/admin/media/upload — multipart upload (field "file") */
 export default defineEventHandler(async (event) => {
+  const resource = getRouterParam(event, 'resource')!
+  if (resource !== 'media') {
+    throw createError({ statusCode: 404, statusMessage: 'Not found' })
+  }
   requirePermission(event, 'media.create')
 
   const parts = await readMultipartFormData(event)

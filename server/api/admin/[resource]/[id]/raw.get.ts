@@ -2,13 +2,16 @@ import { findRow } from '../../../../utils/db'
 import { requirePermission } from '../../../../utils/auth'
 
 interface MediaLike {
-  id: number
   storageKey: string | null
   mime: string
 }
 
-/** stream stored bytes for uploaded media (seeded rows use external urls) */
+/** GET /api/admin/media/:id/raw — stream stored bytes */
 export default defineEventHandler(async (event) => {
+  const resource = getRouterParam(event, 'resource')!
+  if (resource !== 'media') {
+    throw createError({ statusCode: 404, statusMessage: 'Not found' })
+  }
   requirePermission(event, 'media.view')
 
   const id = Number(getRouterParam(event, 'id'))

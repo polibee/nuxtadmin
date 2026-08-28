@@ -6,6 +6,7 @@
  * ============================================================= */
 
 import { getCollection } from './db'
+import { parseWebhookTarget } from './webhook'
 
 interface FieldConfig {
   type: 'string' | 'number' | 'boolean' | 'list'
@@ -21,6 +22,8 @@ export interface ServerResourceConfig {
   permissionPrefix: string
   /** fields stripped on update (identity/foreign keys) */
   immutableFields?: string[]
+  /** extra record-level validation after field coercion (create & update) */
+  validateRecord?: (data: Record<string, unknown>) => string | null
 }
 
 export const RESOURCE_CONFIGS: Record<string, ServerResourceConfig> = {
@@ -94,6 +97,41 @@ export const RESOURCE_CONFIGS: Record<string, ServerResourceConfig> = {
       slug: { type: 'string' },
       fields: { type: 'list' }
     }
+  },
+  'webhooks': {
+    label: 'Webhook',
+    searchable: ['url', 'events'],
+    permissionPrefix: 'webhooks',
+    fields: {
+      url: { type: 'string', required: true },
+      events: { type: 'string', required: true },
+      enabled: { type: 'boolean' },
+      secret: { type: 'string' }
+    },
+    validateRecord: (data) => {
+      if (typeof data.url === 'string') {
+        const parsed = parseWebhookTarget(data.url)
+        if (!parsed.ok) return parsed.message
+      }
+      if (typeof data.events === 'string') {
+        const events = data.events.split(',').map(s => s.trim()).filter(Boolean)
+        if (events.length === 0) return '"events" must list at least one event'
+      }
+      return null
+    }
+  },
+  'revisions': {
+    label: 'Revision',
+    searchable: ['resource', 'key'],
+    permissionPrefix: 'revisions',
+    immutableFields: ['key', 'resource', 'recordId', 'version', 'data'],
+    fields: {
+      key: { type: 'string' },
+      resource: { type: 'string' },
+      recordId: { type: 'number' },
+      version: { type: 'number' },
+      data: { type: 'list' }
+    }
   }
 }
 
@@ -128,6 +166,17 @@ function dynamicConfig(name: string): ServerResourceConfig | undefined {
         searchable.push(field.name)
     }
   }
+
+  // content lifecycle fields (user-defined fields take precedence)
+  if (!fields.status) {
+    fields.status = {
+      type: 'string',
+      enum: ['draft', 'review', 'scheduled', 'published', 'archived']
+    }
+  }
+  if (!fields.publishedAt) fields.publishedAt = { type: 'string' }
+  if (!fields.scheduledAt) fields.scheduledAt = { type: 'string' }
+
   return { label: type.name, searchable, fields, permissionPrefix: 'content' }
 }
 

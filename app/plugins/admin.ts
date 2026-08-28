@@ -9,6 +9,8 @@ import ordersModule from '~/modules/orders/module'
 import mediaModule from '~/modules/media/module'
 import rolesModule from '~/modules/roles/module'
 import contentTypesModule from '~/modules/content-types/module'
+import revisionsModule from '~/modules/revisions/module'
+import webhooksModule from '~/modules/webhooks/module'
 
 /**
  * Application composition root.
@@ -20,7 +22,8 @@ export default defineNuxtPlugin(async () => {
 
   const modules = [
     dashboardModule, usersModule, postsModule, ordersModule,
-    mediaModule, rolesModule, contentTypesModule
+    mediaModule, rolesModule, contentTypesModule,
+    revisionsModule, webhooksModule
   ]
   for (const module of modules) {
     registerModule(module)

@@ -45,14 +45,79 @@ function entryFor(f: ContentTypeField): EntryNode {
   }
 }
 
+const STATUS_BADGES = {
+  draft: { label: 'Draft', variant: 'warning' },
+  review: { label: 'Review', variant: 'secondary' },
+  scheduled: { label: 'Scheduled', variant: 'default' },
+  published: { label: 'Published', variant: 'success' },
+  archived: { label: 'Archived', variant: 'secondary' }
+} as const
+
+function lifecycleActions(name: string): ColumnDefLite {
+  return actionsColumn([
+    defineAction({
+      name: 'publish',
+      label: 'Publish',
+      icon: 'badge-check',
+      permission: 'content.edit',
+      visible: record => record.status !== 'published',
+      handler: async ({ record }) => {
+        await $fetch(`/api/admin/${name}/${record!.id}`, {
+          method: 'PUT',
+          body: { status: 'published', publishedAt: new Date().toISOString() }
+        })
+        notify('Published')
+        emitAdminEvent(`${name}:refresh`)
+      }
+    }),
+    defineAction({
+      name: 'schedule',
+      label: 'Schedule',
+      icon: 'clock',
+      permission: 'content.edit',
+      visible: record => record.status !== 'published' && record.status !== 'scheduled',
+      form: () => [
+        section('Scheduled Publishing', [
+          dateInput('scheduledAt', 'Publish at', { required: true })
+        ])
+      ],
+      handler: async ({ record, values }) => {
+        await $fetch(`/api/admin/${name}/${record!.id}`, {
+          method: 'PUT',
+          body: { status: 'scheduled', scheduledAt: values!.scheduledAt }
+        })
+        notify(`Scheduled for ${values!.scheduledAt}`)
+        emitAdminEvent(`${name}:refresh`)
+      }
+    }),
+    defineAction({
+      name: 'unpublish',
+      label: 'Unpublish',
+      icon: 'eye',
+      permission: 'content.edit',
+      visible: record => record.status === 'published',
+      confirm: { title: 'Move this entry back to draft?', confirmLabel: 'Unpublish' },
+      handler: async ({ record }) => {
+        await $fetch(`/api/admin/${name}/${record!.id}`, {
+          method: 'PUT',
+          body: { status: 'draft' }
+        })
+        notify('Moved to draft')
+        emitAdminEvent(`${name}:refresh`)
+      }
+    })
+  ])
+}
+
 /**
  * Turns a stored content type definition into a registrable module.
  * Used both by the content-types module (preview of itself is not
  * registered) and the boot plugin for every stored type.
  */
 export function buildContentModule(ct: ContentTypeLike): ModuleDef {
+  const name = `ct_${ct.slug}`
   const resource = defineResource({
-    name: `ct_${ct.slug}`,
+    name,
     model: ct.name,
     label: ct.name,
     labelPlural: ct.name,
@@ -65,10 +130,19 @@ export function buildContentModule(ct: ContentTypeLike): ModuleDef {
     table: () => [
       textColumn('id', 'ID', { sortable: true }),
       ...ct.fields.map(columnFor),
-      dateColumn('createdAt', 'Created', { sortable: true })
+      badgeColumn('status', 'Status', STATUS_BADGES),
+      dateColumn('scheduledAt', 'Scheduled'),
+      dateColumn('publishedAt', 'Published'),
+      dateColumn('createdAt', 'Created', { sortable: true }),
+      lifecycleActions(name)
     ],
     form: () => ct.fields.map(fieldFor),
-    infolist: () => ct.fields.map(entryFor)
+    infolist: () => [
+      ...ct.fields.map(entryFor),
+      badgeEntry('status', 'Status', STATUS_BADGES),
+      datetimeEntry('scheduledAt', 'Scheduled'),
+      datetimeEntry('publishedAt', 'Published')
+    ]
   })
 
   return defineModule({

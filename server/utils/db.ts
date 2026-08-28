@@ -184,7 +184,9 @@ const SEEDED: Record<string, AnyRow[]> = {
   'orders': seedOrders() as unknown as AnyRow[],
   'roles': seedRoles() as unknown as AnyRow[],
   'media': seedMedia() as unknown as AnyRow[],
-  'content-types': []
+  'content-types': [],
+  'revisions': [],
+  'webhooks': []
 }
 
 const collections = new Map<string, AnyRow[]>(Object.entries(SEEDED))
@@ -195,6 +197,10 @@ const sequences = new Map<string, number>(
 /** seeded collections + runtime content collections (ct_*) */
 function isKnown(name: string): boolean {
   return collections.has(name) || name.startsWith('ct_')
+}
+
+export function listCollectionNames(): string[] {
+  return [...collections.keys()]
 }
 
 export function getCollection(name: string): AnyRow[] {
