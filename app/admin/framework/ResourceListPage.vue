@@ -6,6 +6,7 @@ const props = defineProps<{ resource: ResolvedResource }>()
 
 const allow = useCan()
 const panel = getPanel()
+const { t } = useI18n()
 
 const prefix = computed(() => props.resource.permissionPrefix)
 const basePath = computed(() => `${panel.path}/${props.resource.name}`)
@@ -26,25 +27,25 @@ onUnmounted(offRefresh)
 
 const deleteAction = computed<ActionDef>(() => ({
   name: 'delete',
-  label: 'Delete',
+  label: t('common.delete'),
   icon: 'trash',
   variant: 'destructive',
   permission: `${prefix.value}.delete`,
   confirm: {
-    title: `Delete this ${props.resource.label.toLowerCase()}?`,
-    description: 'This action cannot be undone.',
-    confirmLabel: 'Delete'
+    title: t('confirm.deleteTitle', { label: props.resource.label.toLowerCase() }),
+    description: t('confirm.deleteDescription'),
+    confirmLabel: t('common.delete')
   },
   handler: async ({ record, resource }) => {
     await $fetch(`/api/admin/${resource.name}/${record!.id}`, { method: 'DELETE' })
-    notify(`${resource.label} deleted`)
+    notify(t('toast.deleted', { label: resource.label }))
     await state.refresh()
   }
 }))
 
 const editAction = computed<ActionDef>(() => ({
   name: 'edit',
-  label: 'Edit',
+  label: t('common.edit'),
   icon: 'pencil',
   permission: `${prefix.value}.edit`,
   handler: async ({ record }) => {
@@ -54,27 +55,27 @@ const editAction = computed<ActionDef>(() => ({
 
 const rowActions = computed<ActionDef[]>(() => [
   ...(props.resource.rowActions ?? []),
-  ...(canEdit.value ? [editAction.value] : []),
+  ...(canEdit.value && !!props.resource.form ? [editAction.value] : []),
   ...(canDelete.value ? [deleteAction.value] : [])
 ])
 
 const bulkDeleteAction = computed<ActionDef>(() => ({
   name: 'bulk-delete',
-  label: 'Delete Selected',
+  label: `${t('common.delete')} (${state.selection.value.size})`,
   icon: 'trash',
   variant: 'destructive',
   permission: `${prefix.value}.delete`,
   confirm: {
-    title: `Delete ${state.selection.value.size || 'selected'} selected ${props.resource.labelPlural.toLowerCase()}?`,
-    description: 'This action cannot be undone.',
-    confirmLabel: 'Delete'
+    title: t('confirm.bulkDeleteTitle', { n: state.selection.value.size || 0, label: props.resource.labelPlural.toLowerCase() }),
+    description: t('confirm.deleteDescription'),
+    confirmLabel: t('common.delete')
   },
   handler: async ({ ids, resource }) => {
     await $fetch(`/api/admin/${resource.name}/bulk-delete`, {
       method: 'POST',
       body: { ids }
     })
-    notify(`${ids!.length} ${resource.labelPlural.toLowerCase()} deleted`)
+    notify(t('toast.bulkDeleted', { n: ids!.length, label: resource.labelPlural.toLowerCase() }))
     await state.refresh()
   }
 }))
@@ -112,14 +113,14 @@ function openCreate(): void {
           {{ resource.labelPlural }}
         </h1>
         <p class="text-sm text-muted-foreground">
-          Manage {{ resource.labelPlural.toLowerCase() }}
+          {{ t('common.manage') }} {{ resource.labelPlural.toLowerCase() }}
         </p>
       </div>
       <UiButton
-        v-if="canCreate"
+        v-if="canCreate && !!resource.form"
         @click="openCreate"
       >
-        <PlusIcon /> New {{ resource.label }}
+        <PlusIcon /> {{ t('common.newLabel', { label: resource.label }) }}
       </UiButton>
     </div>
 

@@ -9,22 +9,35 @@ const props = defineProps<{
 }>()
 
 const panel = getPanel()
+const { t } = useI18n()
 const basePath = computed(() => `${panel.path}/${props.resource.name}`)
 const schema = computed(() => props.resource.form?.() ?? [])
+
+/** multipart when the schema contains file fields, JSON otherwise */
+function buildBody(values: Record<string, unknown>): FormData | Record<string, unknown> {
+  if (!Object.values(values).some(v => v instanceof File)) return values
+  const fd = new FormData()
+  for (const [key, val] of Object.entries(values)) {
+    if (val === undefined || val === null) continue
+    fd.append(key, val instanceof File ? val : JSON.stringify(val))
+  }
+  return fd
+}
 
 const { form, submit, submitting } = useFormSchema({
   schema: () => schema.value,
   initialValues: {},
   onSubmit: async (values) => {
     if (props.mode === 'create') {
-      await $fetch(`/api/admin/${props.resource.name}`, { method: 'POST', body: values })
-      notify(`${props.resource.label} created`)
+      const url = props.resource.endpoints?.create ?? `/api/admin/${props.resource.name}`
+      await $fetch(url, { method: 'POST', body: buildBody(values) })
+      notify(t('toast.created', { label: props.resource.label }))
     } else {
       await $fetch(`/api/admin/${props.resource.name}/${props.id}`, {
         method: 'PUT',
-        body: values
+        body: buildBody(values)
       })
-      notify(`${props.resource.label} updated`)
+      notify(t('toast.updated', { label: props.resource.label }))
     }
     await navigateTo(basePath.value)
   }
@@ -39,7 +52,7 @@ onMounted(async () => {
     const record = await $fetch<Record<string, unknown>>(`/api/admin/${props.resource.name}/${props.id}`)
     form.setValues(record as never)
   } catch (e: unknown) {
-    notifyError(`Failed to load ${props.resource.label}`, (e as Error).message)
+    notifyError(t('toast.loadFailed', { label: props.resource.label }), (e as Error).message)
   } finally {
     loading.value = false
   }
@@ -51,13 +64,13 @@ onMounted(async () => {
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="text-2xl font-semibold tracking-tight">
-          {{ mode === 'create' ? `New ${resource.label}` : `Edit ${resource.label}` }}
+          {{ mode === 'create' ? t('common.newLabel', { label: resource.label }) : t('common.editLabel', { label: resource.label }) }}
         </h1>
         <NuxtLink
           :to="basePath"
           class="text-sm text-muted-foreground hover:text-foreground"
         >
-          ← Back to {{ resource.labelPlural.toLowerCase() }}
+          ← {{ t('common.backTo', { target: resource.labelPlural.toLowerCase() }) }}
         </NuxtLink>
       </div>
     </div>
@@ -67,7 +80,7 @@ onMounted(async () => {
         v-if="loading"
         class="py-12 text-center text-muted-foreground"
       >
-        Loading…
+        {{ t('common.loading') }}
       </div>
       <form
         v-else
@@ -82,13 +95,13 @@ onMounted(async () => {
             :disabled="submitting"
             @click="navigateTo(basePath)"
           >
-            <ArrowLeftIcon /> Cancel
+            <ArrowLeftIcon /> {{ t('common.cancel') }}
           </UiButton>
           <UiButton
             type="submit"
             :disabled="submitting"
           >
-            {{ submitting ? 'Saving…' : mode === 'create' ? `Create ${resource.label}` : 'Save Changes' }}
+            {{ submitting ? t('common.saving') : mode === 'create' ? t('common.createLabel', { label: resource.label }) : t('common.saveChanges') }}
           </UiButton>
         </div>
       </form>

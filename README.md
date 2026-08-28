@@ -42,16 +42,18 @@ app/
 │   ├── actions/          # defineAction：确认弹窗/表单弹窗/权限/通知管线
 │   ├── widgets/          # 仪表盘 Widget 注册
 │   ├── notifications/    # Toast 通知
+│   ├── i18n/             # 轻量国际化（zh-CN / en，Cookie 持久化）
 │   ├── framework/        # 通用渲染组件（DataTable/Resource*Page/ActionHost）
-│   └── ui/               # 基础 UI 原子组件
-├── modules/              # 业务模块（users/posts/orders/dashboard）
+│   └── ui/               # UI 原子组件库（17 个，shadcn 风格 · reka-ui）
+├── modules/              # 业务模块（users/posts/orders/dashboard/media/roles/content-types）
 ├── pages/admin/[...path] # 资源路由分发
-└── plugins/admin.ts      # 组合根：注册 Panel 与全部模块
+└── plugins/admin.ts      # 组合根：注册 Panel、静态模块与运行时内容类型
 
 server/
-├── api/auth/             # 登录/会话
+├── api/auth/             # 登录/会话（权限由 roles 集合解析）
 ├── api/admin/[resource]/ # 通用 REST：list/create/read/update/delete/bulk-delete
-└── utils/                # db(仓储) · auth(会话) · resourceConfigs(服务端校验)
+├── api/admin/media/      # 媒体库：multipart 上传 / 字节回读 / 删除清存储
+└── utils/                # db(集合仓储+动态内容集合) · auth(会话) · resourceConfigs(静态+动态校验)
 
 shared/types/api.ts       # 前后端共享契约
 ```
@@ -127,10 +129,10 @@ CI 流水线（`.github/workflows/ci.yml`）依次执行 **Lint → Typecheck �
 
 | 文档 | 读者 | 内容 |
 |---|---|---|
-| [`docs/介绍文档.md`](docs/介绍文档.md) | 所有人 | 项目定位、特性总览、架构、快速开始、路线图 |
-| [`docs/开发指南.md`](docs/开发指南.md) | 开发者 | 目录职责、核心概念、自动导入清单、新建模块实战、API 参考、规范 |
+| [`docs/介绍文档.md`](docs/介绍文档.md) | 所有人 | 项目定位、特性总览、Strapi 能力对标、架构、快速开始、路线图 |
+| [`docs/开发指南.md`](docs/开发指南.md) | 开发者 | 目录职责、核心概念、自动导入清单、UI 组件清单、新建模块实战、API 参考、规范 |
 | [`docs/工程审计报告.md`](docs/工程审计报告.md) | 维护者 | 审计发现与处置、验证矩阵、生产前置清单 |
-| [`docs/开发文档.md`](docs/开发文档.md) | 设计溯源 | 原始设计蓝本（Nuxt 版 Filament 设计文档）|
+| [`docs/开发文档.md`](docs/开发文档.md) | 设计溯源 | 原始设计蓝本 |
 
 ## 当前定位
 

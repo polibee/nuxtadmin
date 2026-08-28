@@ -20,6 +20,9 @@ export type FieldType
     | 'checkbox'
     | 'date'
     | 'relation'
+    | 'file'
+    | 'repeater'
+    | 'permissions'
 
 export interface FieldOption {
   label: string
@@ -53,6 +56,8 @@ export interface FieldNode {
   rows?: number
   /** relation picker */
   relation?: RelationConfig
+  /** repeater: nested sub-fields repeated per row */
+  subFields?: FieldNode[]
   /** extra zod rules appended to base rule */
   rules?: ZodTypeAny[]
   /** grid column span */
@@ -122,7 +127,7 @@ export interface ActionDef {
 }
 
 export interface ColumnMeta {
-  kind: 'text' | 'number' | 'money' | 'date' | 'badge' | 'boolean' | 'actions'
+  kind: 'text' | 'number' | 'money' | 'date' | 'badge' | 'boolean' | 'actions' | 'image' | 'tags'
   sortable?: boolean
   align?: 'left' | 'center' | 'right'
   badges?: Record<string | number, BadgeStyle>
@@ -141,7 +146,7 @@ export interface ColumnDefLite {
 
 /* ---------------- Infolist Entries ---------------- */
 
-export type EntryKind = 'text' | 'badge' | 'boolean' | 'money' | 'date' | 'datetime' | 'link'
+export type EntryKind = 'text' | 'badge' | 'boolean' | 'money' | 'date' | 'datetime' | 'link' | 'tags'
 
 export interface EntryNode {
   kind: EntryKind
@@ -168,6 +173,8 @@ export interface AdminResource {
   /** permission prefix, defaults to name */
   permissionPrefix?: string
   searchable?: string[]
+  /** endpoint overrides, e.g. multipart upload for media */
+  endpoints?: { create?: string }
   form?: () => SchemaNode[]
   table?: () => ColumnDefLite[]
   infolist?: () => EntryNode[]

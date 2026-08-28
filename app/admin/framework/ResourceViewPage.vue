@@ -8,6 +8,7 @@ const props = defineProps<{
 }>()
 
 const panel = getPanel()
+const { t } = useI18n()
 const basePath = computed(() => `${panel.path}/${props.resource.name}`)
 const allow = useCan()
 const canEdit = computed(() => allow(`${props.resource.permissionPrefix}.edit`))
@@ -20,7 +21,8 @@ const notFound = ref(false)
 const entries = computed<EntryNode[]>(() => {
   if (props.resource.infolist) return props.resource.infolist()
   const map: Record<string, EntryNode['kind']> = {
-    text: 'text', number: 'text', money: 'money', date: 'date', badge: 'badge', boolean: 'boolean'
+    text: 'text', number: 'text', money: 'money', date: 'date', badge: 'badge',
+    boolean: 'boolean', image: 'text', tags: 'tags'
   }
   return (props.resource.table?.() ?? [])
     .filter(c => c.meta.kind !== 'actions' && c.name !== '__actions')
@@ -43,13 +45,13 @@ onMounted(async () => {
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="text-2xl font-semibold tracking-tight">
-          View {{ resource.label }}
+          {{ t('common.viewLabel', { label: resource.label }) }}
         </h1>
         <NuxtLink
           :to="basePath"
           class="text-sm text-muted-foreground hover:text-foreground"
         >
-          ← Back to {{ resource.labelPlural.toLowerCase() }}
+          ← {{ t('common.backTo', { target: resource.labelPlural.toLowerCase() }) }}
         </NuxtLink>
       </div>
       <div class="flex items-center gap-2">
@@ -73,13 +75,13 @@ onMounted(async () => {
         v-if="loading"
         class="py-12 text-center text-muted-foreground"
       >
-        Loading…
+        {{ t('common.loading') }}
       </div>
       <div
         v-else-if="notFound || !record"
         class="py-12 text-center text-muted-foreground"
       >
-        {{ resource.label }} not found.
+        {{ t('table.empty', { label: resource.label }) }}
       </div>
       <InfolistRenderer
         v-else

@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { LogOutIcon, MenuIcon, MoonIcon, SunIcon } from 'lucide-vue-next'
+import { GlobeIcon, LogOutIcon, MenuIcon, MoonIcon, SunIcon } from 'lucide-vue-next'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuRoot,
   DropdownMenuSeparator,
   DropdownMenuTrigger
@@ -14,12 +16,13 @@ defineEmits<{ 'toggle-sidebar': [] }>()
 
 const ui = useUiStore()
 const auth = useAuthStore()
+const { t, locale } = useI18n()
 
-const roleBadge: Record<string, string> = {
-  admin: 'Full access',
-  editor: 'Content editor',
-  viewer: 'Read only'
-}
+const roleBadge = computed<Record<string, string>>(() => ({
+  admin: t('auth.roleAdmin'),
+  editor: t('auth.roleEditor'),
+  viewer: t('auth.roleViewer')
+}))
 </script>
 
 <template>
@@ -34,6 +37,36 @@ const roleBadge: Record<string, string> = {
     </UiButton>
 
     <div class="min-w-0 flex-1" />
+
+    <!-- locale switcher -->
+    <DropdownMenuRoot>
+      <DropdownMenuTrigger as-child>
+        <UiButton
+          variant="ghost"
+          size="icon"
+          aria-label="Language"
+        >
+          <GlobeIcon class="h-4 w-4" />
+        </UiButton>
+      </DropdownMenuTrigger>
+      <DropdownMenuPortal>
+        <DropdownMenuContent
+          align="end"
+          class="z-50 w-36 rounded-md border bg-popover p-1 shadow-md"
+        >
+          <DropdownMenuRadioGroup v-model="locale">
+            <DropdownMenuRadioItem
+              v-for="item in LOCALES"
+              :key="item.value"
+              :value="item.value"
+              class="flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent"
+            >
+              {{ item.label }}
+            </DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenuPortal>
+    </DropdownMenuRoot>
 
     <!-- theme toggle -->
     <UiButton
@@ -58,9 +91,11 @@ const roleBadge: Record<string, string> = {
         <button
           class="flex h-9 items-center gap-2 rounded-full border pl-1 pr-3 text-sm transition-colors hover:bg-accent"
         >
-          <span class="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-            {{ auth.user.name.split(' ').map(p => p[0]).slice(0, 2).join('') }}
-          </span>
+          <UiAvatar class="h-7 w-7">
+            <UiAvatarFallback class="flex h-7 w-7 items-center justify-center text-[10px] font-semibold">
+              {{ auth.user.name.split(' ').map(p => p[0]).slice(0, 2).join('') }}
+            </UiAvatarFallback>
+          </UiAvatar>
           <span class="hidden sm:inline">{{ auth.user.name }}</span>
         </button>
       </DropdownMenuTrigger>
@@ -86,7 +121,7 @@ const roleBadge: Record<string, string> = {
             class="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent"
             @select="auth.logout()"
           >
-            <LogOutIcon class="h-4 w-4" /> Sign out
+            <LogOutIcon class="h-4 w-4" /> {{ t('auth.signOut') }}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenuPortal>

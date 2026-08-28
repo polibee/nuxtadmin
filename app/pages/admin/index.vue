@@ -3,6 +3,7 @@ import { cn } from '~/admin/utils/cn'
 
 const panel = getPanel()
 const allow = useCan()
+const { t } = useI18n()
 
 const widgets = computed(() =>
   getWidgets().filter(w => !w.permission || allow(w.permission))
@@ -23,10 +24,10 @@ function spanClass(span: number | undefined): string {
   <div class="space-y-6">
     <div>
       <h1 class="text-2xl font-semibold tracking-tight">
-        Dashboard
+        {{ t('dashboard.title') }}
       </h1>
       <p class="text-sm text-muted-foreground">
-        Welcome to {{ panel.branding?.name ?? 'your admin panel' }}
+        {{ t('dashboard.welcome', { brand: panel.branding?.name ?? 'Nuxt Admin' }) }}
       </p>
     </div>
 
@@ -44,7 +45,7 @@ function spanClass(span: number | undefined): string {
       v-if="widgets.length === 0"
       class="py-12 text-center text-sm text-muted-foreground"
     >
-      No widgets available for your role.
+      {{ t('dashboard.noWidgets') }}
     </p>
   </div>
 </template>

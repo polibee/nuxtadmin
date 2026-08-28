@@ -23,6 +23,12 @@ function baseRuleFor(node: FieldNode): ZodTypeAny {
     case 'switch':
     case 'checkbox':
       return z.boolean().default(false)
+    case 'file':
+      return z.any()
+    case 'repeater':
+      return z.array(z.record(z.unknown()))
+    case 'permissions':
+      return z.array(z.string())
     case 'select':
       return z.union([z.string(), z.number(), z.null()]).transform(v => v ?? '')
     case 'relation':
@@ -40,6 +46,8 @@ function compileField(node: FieldNode): ZodTypeAny {
     rule = z.string().min(1, `${node.label} is required`).email(`${node.label} must be a valid email`)
   } else if (node.required && STRING_BASE_KINDS.includes(node.kind)) {
     rule = (rule as z.ZodString).min(1, `${node.label} is required`)
+  } else if (node.required && node.kind === 'file') {
+    rule = z.any().refine(v => v instanceof File && v.size > 0, `${node.label} is required`)
   } else if (node.required && node.kind === 'number') {
     rule = z.preprocess(
       v => (v === '' || v === null || v === undefined ? undefined : Number(v)),

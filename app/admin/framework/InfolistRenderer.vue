@@ -18,6 +18,7 @@ function display(entry: EntryNode): string {
       const style = entry.badges?.[raw as string | number]
       return style ? style.label : String(raw ?? '-')
     }
+    case 'tags': return ''
     default: return `${entry.prefix ?? ''}${String(raw ?? '-')}${entry.suffix ?? ''}`
   }
 }
@@ -58,6 +59,24 @@ function badgeVariantFor(entry: EntryNode): string | undefined {
             class="text-muted-foreground"
           >-</span>
         </template>
+        <div
+          v-else-if="entry.kind === 'tags'"
+          class="flex flex-wrap gap-1"
+        >
+          <template v-if="Array.isArray(record[entry.name]) && (record[entry.name] as unknown[]).length > 0">
+            <UiBadge
+              v-for="tag in record[entry.name] as unknown[]"
+              :key="String(tag)"
+              variant="secondary"
+            >
+              {{ typeof tag === 'object' ? String((tag as Record<string, unknown>).label ?? (tag as Record<string, unknown>).name ?? '') : String(tag) }}
+            </UiBadge>
+          </template>
+          <span
+            v-else
+            class="text-muted-foreground"
+          >-</span>
+        </div>
         <span v-else>{{ display(entry) }}</span>
       </dd>
     </div>

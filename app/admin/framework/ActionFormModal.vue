@@ -10,6 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ submit: [values: Record<string, unknown>], cancel: [] }>()
 
+const { t } = useI18n()
 const { submit, submitting } = useFormSchema({
   schema: () => props.schema,
   initialValues: props.initial,
@@ -30,13 +31,13 @@ const { submit, submitting } = useFormSchema({
         :disabled="submitting || busy"
         @click="emit('cancel')"
       >
-        Cancel
+        {{ t('common.cancel') }}
       </UiButton>
       <UiButton
         type="submit"
         :disabled="submitting || busy"
       >
-        {{ submitting || busy ? 'Saving…' : 'Confirm' }}
+        {{ submitting || busy ? t('common.saving') : t('common.confirm') }}
       </UiButton>
     </div>
   </form>

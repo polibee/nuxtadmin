@@ -30,6 +30,7 @@ const props = withDefaults(defineProps<{
 }>(), { bulkActions: () => [] })
 
 const runner = useActionRunner()
+const { t } = useI18n()
 
 /* ---------- TanStack core row model over lite columns ---------- */
 
@@ -72,6 +73,8 @@ function liteOf(id: string): ColumnDefLite | undefined {
 function cellText(lite: ColumnDefLite, value: unknown): string {
   const m = lite.meta
   switch (m.kind) {
+    case 'image': return ''
+    case 'tags': return ''
     case 'money': return formatMoney(value, m.prefix)
     case 'number': return formatNumber(value)
     case 'date': return formatDate(value)
@@ -118,7 +121,7 @@ function onExport(): void {
         <SearchIcon class="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <UiInput
           v-model="searchQuery"
-          :placeholder="`Search ${resource.labelPlural?.toLowerCase()}…`"
+          :placeholder="t('table.search', { label: resource.labelPlural?.toLowerCase() ?? '' })"
           class="w-64 pl-8"
         />
       </div>
@@ -132,7 +135,7 @@ function onExport(): void {
           :disabled="state.items.value.length === 0"
           @click="onExport"
         >
-          <DownloadIcon /> Export
+          <DownloadIcon /> {{ t('common.export') }}
         </UiButton>
       </div>
     </div>
@@ -142,7 +145,7 @@ function onExport(): void {
       v-if="hasSelectionColumn && state.selection.value.size > 0"
       class="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2 text-sm"
     >
-      <span class="font-medium">{{ state.selection.value.size }} selected</span>
+      <span class="font-medium">{{ t('table.selected', { n: state.selection.value.size }) }}</span>
       <UiButton
         v-for="action in bulkActions"
         :key="action.name"
@@ -212,7 +215,7 @@ function onExport(): void {
                 :colspan="props.columns.length + (hasSelectionColumn ? 1 : 0)"
                 class="px-4 py-12 text-center text-muted-foreground"
               >
-                Loading…
+                {{ t('common.loading') }}
               </td>
             </tr>
             <tr v-else-if="state.items.value.length === 0">
@@ -220,7 +223,7 @@ function onExport(): void {
                 :colspan="props.columns.length + (hasSelectionColumn ? 1 : 0)"
                 class="px-4 py-12 text-center text-muted-foreground"
               >
-                No {{ resource.labelPlural?.toLowerCase() }} found.
+                {{ t('table.empty', { label: resource.labelPlural?.toLowerCase() ?? '' }) }}
               </td>
             </tr>
 
@@ -287,6 +290,36 @@ function onExport(): void {
                   {{ cellText((cell.column.columnDef.meta as LiteMeta).lite!, cell.getValue()) }}
                 </UiBadge>
 
+                <img
+                  v-else-if="(cell.column.columnDef.meta as LiteMeta)?.lite?.meta.kind === 'image' && cell.getValue()"
+                  :src="String(cell.getValue())"
+                  alt=""
+                  class="h-10 w-10 rounded-md border object-cover"
+                >
+                <span
+                  v-else-if="(cell.column.columnDef.meta as LiteMeta)?.lite?.meta.kind === 'image'"
+                  class="text-muted-foreground"
+                >–</span>
+
+                <div
+                  v-else-if="(cell.column.columnDef.meta as LiteMeta)?.lite?.meta.kind === 'tags'"
+                  class="flex flex-wrap gap-1"
+                >
+                  <template v-if="Array.isArray(cell.getValue()) && (cell.getValue() as unknown[]).length > 0">
+                    <UiBadge
+                      v-for="tag in cell.getValue() as unknown[]"
+                      :key="String(tag)"
+                      variant="secondary"
+                    >
+                      {{ typeof tag === 'object' ? String((tag as Record<string, unknown>).label ?? (tag as Record<string, unknown>).name ?? '') : String(tag) }}
+                    </UiBadge>
+                  </template>
+                  <span
+                    v-else
+                    class="text-muted-foreground"
+                  >–</span>
+                </div>
+
                 <span
                   v-else
                   :class="(cell.column.columnDef.meta as LiteMeta)?.lite?.meta.align === 'right' ? 'tabular-nums' : ''"
@@ -300,20 +333,20 @@ function onExport(): void {
       <!-- pagination -->
       <div class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 text-sm text-muted-foreground">
         <div>
-          Showing
+          {{ t('table.showing') }}
           <template v-if="state.total.value > 0">
             {{ (state.page.value - 1) * state.perPage.value + 1 }}–{{ Math.min(state.page.value * state.perPage.value, state.total.value) }}
-            of <span class="font-medium text-foreground">{{ state.total.value }}</span>
+            / <span class="font-medium text-foreground">{{ state.total.value }}</span>
           </template>
           <template v-else>
             0
           </template>
-          results
+          {{ t('table.results') }}
         </div>
         <div class="flex items-center gap-3">
           <UiSelect
             :model-value="state.perPage.value"
-            :options="[10, 25, 50].map(n => ({ label: `${n} / page`, value: n }))"
+            :options="[10, 25, 50].map(n => ({ label: `${n} ${t('table.perPage')}`, value: n }))"
             class="h-8 w-28 text-xs"
             @update:model-value="state.setPerPage(Number($event))"
           />
@@ -327,7 +360,7 @@ function onExport(): void {
             >
               <ChevronLeftIcon class="h-4 w-4" />
             </UiButton>
-            <span class="min-w-16 text-center text-xs">Page {{ state.page.value }} / {{ state.totalPages.value }}</span>
+            <span class="min-w-16 text-center text-xs">{{ t('table.page', { page: state.page.value, totalPages: state.totalPages.value }) }}</span>
             <UiButton
               variant="outline"
               size="icon"

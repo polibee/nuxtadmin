@@ -13,6 +13,7 @@ interface FieldOptions {
   rows?: number
   colSpan?: 1 | 2 | 3 | 4
   relation?: RelationConfig
+  subFields?: FieldNode[]
 }
 
 function make(kind: FieldType, name: string, label: string, opts: FieldOptions = {}): FieldNode {
@@ -68,4 +69,24 @@ export function relationInput(
   opts?: FieldOptions
 ): FieldNode {
   return make('relation', name, label, { ...opts, relation })
+}
+
+/** file upload (multipart); value is a File at submit time */
+export function fileInput(name: string, label: string, opts?: FieldOptions): FieldNode {
+  return make('file', name, label, opts)
+}
+
+/** array-of-objects editor; each row renders the given sub-fields */
+export function repeaterInput(
+  name: string,
+  label: string,
+  subFields: FieldNode[],
+  opts?: FieldOptions
+): FieldNode {
+  return make('repeater', name, label, { ...opts, subFields })
+}
+
+/** permission matrix (string[] of granted permission keys) */
+export function permissionsInput(name: string, label: string, opts?: FieldOptions): FieldNode {
+  return make('permissions', name, label, opts)
 }

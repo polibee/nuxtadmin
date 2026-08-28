@@ -4,6 +4,7 @@ import { cn } from '~/admin/utils/cn'
 
 const panel = getPanel()
 const route = useRoute()
+const { t } = useI18n()
 const navigation = computed(() => buildNavigation())
 
 function isActive(to: string): boolean {
@@ -45,7 +46,7 @@ function isActive(to: string): boolean {
           :is="getIcon('dashboard')"
           class="h-4 w-4 shrink-0"
         />
-        Dashboard
+        {{ t('nav.dashboard') }}
       </NuxtLink>
 
       <div

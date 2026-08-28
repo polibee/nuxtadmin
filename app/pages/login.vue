@@ -5,6 +5,7 @@ definePageMeta({ layout: false })
 
 const auth = useAuthStore()
 const route = useRoute()
+const { t } = useI18n()
 
 const email = ref('admin@demo.dev')
 const password = ref('password')
@@ -22,7 +23,7 @@ async function submit(): Promise<void> {
     const safe = target.startsWith('/') && !target.startsWith('//') ? target : '/admin'
     await navigateTo(safe, { replace: true })
   } catch (e: unknown) {
-    error.value = (e as { data?: { message?: string } })?.data?.message ?? 'Invalid credentials'
+    error.value = (e as { data?: { message?: string } })?.data?.message ?? t('auth.invalid')
   } finally {
     loading.value = false
   }
@@ -54,10 +55,10 @@ function fill(account: string): void {
           </svg>
         </div>
         <h1 class="text-xl font-semibold">
-          Nuxt Admin
+          {{ t('auth.title') }}
         </h1>
         <p class="text-sm text-muted-foreground">
-          Sign in to your panel
+          {{ t('auth.subtitle') }}
         </p>
       </div>
 
@@ -68,7 +69,7 @@ function fill(account: string): void {
         >
           <div class="space-y-1.5">
             <UiLabel for="email">
-              Email
+              {{ t('auth.email') }}
             </UiLabel>
             <UiInput
               id="email"
@@ -80,7 +81,7 @@ function fill(account: string): void {
           </div>
           <div class="space-y-1.5">
             <UiLabel for="password">
-              Password
+              {{ t('auth.password') }}
             </UiLabel>
             <div class="relative">
               <UiInput
@@ -120,7 +121,7 @@ function fill(account: string): void {
             class="w-full"
             :disabled="loading"
           >
-            <LogInIcon /> {{ loading ? 'Signing in…' : 'Sign In' }}
+            <LogInIcon /> {{ loading ? t('auth.signingIn') : t('auth.signIn') }}
           </UiButton>
         </form>
       </UiCard>
@@ -128,7 +129,7 @@ function fill(account: string): void {
       <!-- demo accounts -->
       <UiCard class="p-4">
         <p class="mb-2 text-xs font-medium text-muted-foreground">
-          Demo accounts (password: password)
+          {{ t('auth.demoNote') }}
         </p>
         <div class="grid gap-1 text-xs">
           <button
@@ -136,21 +137,21 @@ function fill(account: string): void {
             type="button"
             @click="fill('admin@demo.dev')"
           >
-            <span>admin@demo.dev</span><span class="text-muted-foreground">Admin · all permissions</span>
+            <span>admin@demo.dev</span><span class="text-muted-foreground">{{ t('auth.roleAdmin') }}</span>
           </button>
           <button
             class="flex justify-between rounded px-2 py-1 hover:bg-accent"
             type="button"
             @click="fill('editor@demo.dev')"
           >
-            <span>editor@demo.dev</span><span class="text-muted-foreground">Editor · content only</span>
+            <span>editor@demo.dev</span><span class="text-muted-foreground">{{ t('auth.roleEditor') }}</span>
           </button>
           <button
             class="flex justify-between rounded px-2 py-1 hover:bg-accent"
             type="button"
             @click="fill('viewer@demo.dev')"
           >
-            <span>viewer@demo.dev</span><span class="text-muted-foreground">Viewer · read only</span>
+            <span>viewer@demo.dev</span><span class="text-muted-foreground">{{ t('auth.roleViewer') }}</span>
           </button>
         </div>
       </UiCard>

@@ -10,6 +10,7 @@ import {
 import { getIcon } from '~/admin/utils/iconMap'
 
 const runner = useActionRunner()
+const { t } = useI18n()
 
 const ConfirmIcon = computed(() => getIcon(runner.confirmTarget?.action.icon))
 const isDestructive = computed(() => runner.confirmTarget?.action.variant === 'destructive')
@@ -41,7 +42,7 @@ const isDestructive = computed(() => runner.confirmTarget?.action.variant === 'd
               {{ runner.confirmTarget.action.confirm?.title }}
             </DialogTitle>
             <DialogDescription class="text-sm text-muted-foreground">
-              {{ runner.confirmTarget.action.confirm?.description || `This will run "${runner.confirmTarget.action.label}".` }}
+              {{ runner.confirmTarget.action.confirm?.description || t('confirm.defaultDescription', { label: runner.confirmTarget.action.label }) }}
             </DialogDescription>
           </div>
         </div>
@@ -51,7 +52,7 @@ const isDestructive = computed(() => runner.confirmTarget?.action.variant === 'd
             :disabled="runner.busy"
             @click="runner.close()"
           >
-            Cancel
+            {{ t('common.cancel') }}
           </UiButton>
           <UiButton
             :variant="isDestructive ? 'destructive' : 'default'"

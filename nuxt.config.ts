@@ -28,7 +28,8 @@ export default defineNuxtConfig({
       '~/admin/forms',
       '~/admin/tables',
       '~/admin/framework',
-      '~/admin/notifications'
+      '~/admin/notifications',
+      '~/admin/i18n'
     ]
   },
 
@@ -42,6 +43,12 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2026-06-30',
+
+  nitro: {
+    storage: {
+      media: { driver: 'fs', base: './.data/media' }
+    }
+  },
 
   vite: {
     plugins: [tailwindcss()]

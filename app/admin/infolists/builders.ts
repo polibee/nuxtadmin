@@ -40,3 +40,8 @@ export function datetimeEntry(name: string, label: string): EntryNode {
 export function linkEntry(name: string, label: string): EntryNode {
   return entry('link', name, label)
 }
+
+/** array value rendered as badge chips */
+export function tagsEntry(name: string, label: string): EntryNode {
+  return entry('tags', name, label)
+}

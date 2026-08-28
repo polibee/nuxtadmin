@@ -45,3 +45,13 @@ export function booleanColumn(
 export function actionsColumn(actions: ActionDef[]): ColumnDefLite {
   return { name: '__actions', label: '', meta: { kind: 'actions', actions, align: 'right' } }
 }
+
+/** thumbnail cell (value = image URL) */
+export function imageColumn(name: string, label: string, opts?: ColumnOptions): ColumnDefLite {
+  return { name, label, meta: { kind: 'image', ...opts } }
+}
+
+/** array rendered as badge chips (value = string[]) */
+export function tagsColumn(name: string, label: string, opts?: ColumnOptions): ColumnDefLite {
+  return { name, label, meta: { kind: 'tags', ...opts } }
+}
