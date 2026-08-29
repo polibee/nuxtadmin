@@ -1,5 +1,6 @@
 import { findRow } from '../../../utils/db'
 import { escapeHtml } from '../../../utils/xml'
+import { sanitizeRichText } from '../../../utils/sanitize'
 import { isPreviewableResource, readPreviewToken } from '../../../utils/preview'
 
 /**
@@ -19,7 +20,8 @@ export default defineEventHandler((event) => {
   const row = findRow(resource, id)
   const title = String(row.seoTitle || row.title || row.name || `Preview #${id}`)
   const description = String(row.seoDescription ?? '')
-  const body = String(row.content ?? '')
+  // rich text is server-sanitized at save time AND here (defense in depth)
+  const body = sanitizeRichText(String(row.content ?? ''))
   const minutes = Math.max(1, Math.ceil(15))
 
   const html = `<!DOCTYPE html>
@@ -42,7 +44,7 @@ export default defineEventHandler((event) => {
 <div class="banner"><span class="badge">PREVIEW</span><span>This is a draft preview — it expires in ~${minutes} minutes and is not indexed.</span></div>
 <h1>${escapeHtml(title)}</h1>
 ${description ? `<p class="desc">${escapeHtml(description)}</p>` : ''}
-<article>${escapeHtml(body)}</article>
+<article>${body}</article>
 </body>
 </html>`
 

@@ -1,8 +1,9 @@
-import { applyQuery, deleteRows, findRow, insertRow, updateRow } from './db'
+import { applyQuery, deleteRows, findRow, getCollection, insertRow, updateRow } from './db'
 import { getConfig, validateInput } from './resourceConfigs'
 import { requirePermission } from './auth'
 import { emitCmsEvent } from './events'
 import { snapshotRevision } from './revisions'
+import { sanitizeRichText } from './sanitize'
 
 type Evt = Parameters<typeof getQuery>[0]
 
@@ -11,6 +12,25 @@ type Evt = Parameters<typeof getQuery>[0]
  * routes AND by explicit routes inside static dirs (media/,
  * webhooks/) that would otherwise shadow the parametric router.
  * ============================================================= */
+
+/** whitelist-sanitize rich-text values before they reach the store */
+function sanitizeRichTextValues(resource: string, data: Record<string, unknown>): void {
+  if (resource === 'posts' && typeof data.content === 'string') {
+    data.content = sanitizeRichText(data.content)
+    return
+  }
+  if (resource.startsWith('ct_')) {
+    const slug = resource.slice(3)
+    const type = getCollection('content-types').find(t => t.slug === slug) as
+      | { fields?: Array<{ name: string, type: string }> }
+      | undefined
+    for (const field of type?.fields ?? []) {
+      if (field.type === 'richtext' && typeof data[field.name] === 'string') {
+        data[field.name] = sanitizeRichText(data[field.name] as string)
+      }
+    }
+  }
+}
 
 export function listResource(event: Evt, resource: string) {
   const cfg = getConfig(resource)
@@ -70,6 +90,7 @@ export async function createResource(event: Evt, resource: string, body: Record<
     }
   }
 
+  sanitizeRichTextValues(resource, result.data)
   const row = insertRow(resource, result.data)
   await emitCmsEvent('content.afterCreate', { resource, record: row })
   return row
@@ -104,6 +125,7 @@ export async function updateResource(event: Evt, resource: string, id: number, b
     }
   }
 
+  sanitizeRichTextValues(resource, result.data)
   snapshotRevision(resource, before)
   const row = updateRow(resource, id, result.data)
   await emitCmsEvent('content.afterUpdate', { resource, id, record: row, patch: result.data })
