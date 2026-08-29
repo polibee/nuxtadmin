@@ -5,7 +5,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 /** POST /api/admin/mail/test — send a test email through the active provider */
 export default defineEventHandler(async (event) => {
-  requirePermission(event, 'settings.edit')
+  await requirePermission(event, 'settings.edit')
 
   const body = await readBody<{ to?: string }>(event)
   const to = String(body?.to ?? '').trim()

@@ -310,6 +310,34 @@ Optional hooks on `ServerResourceConfig` (`server/utils/resourceConfigs.ts`):
 - engine-injected texts (lifecycle actions/badges/validation errors) use render-time `t()` and follow the locale without a reload;
 - every new string goes into the `app/admin/i18n/index.ts` dictionary in both languages (key prefixes: common/table/auth/editor/draft/widget/settings/mail/dialog/status/res.*).
 
+### 4.21 Database Persistence & Redis Cache
+
+Storage uses an **adapter + write-through** architecture: the in-memory collections stay the
+serving layer (zero API churn) while SQL drivers provide durability and boot-time loading.
+
+- **Drivers**: memory (default) / postgres / mysql; **Supabase = PostgreSQL via connection
+  string preset** (SSL on). Implementations live in `server/utils/store.ts`. All DDL/DML are
+  compile-time literals and **every value is a bound parameter** (pg `$n`, mysql `?`, IN-lists
+  via `ANY($2::bigint[])` / mysql2 array expansion) - zero concatenation.
+- **Boot flow** (`server/plugins/storage.ts`): read config (env `DB_DRIVER/DATABASE_URL/
+  DB_HOST…` first, then the settings collection) → init driver + create tables
+  (`cms_records`: resource+id+JSONB data; `cms_sequences`) → load persisted rows into memory
+  (default seeds cleared first) → re-seed empty collections when `SEED_DEMO` (default true).
+- **Write-through**: `db.ts` insert/update/delete call `persistUpsert/persistRemoval`
+  (fire-and-forget, failures logged). Single-node consistency; multi-instance needs
+  push-down queries (roadmap).
+- **Redis**: `server/utils/kv.ts` backs sessions (`sess:*`, 8h TTL), preview tokens and form
+  drafts (7d TTL) - configure it to scale beyond one instance. Falls back to in-memory.
+  The webhook retry queue is still in-process (documented).
+- **Config panel**: Settings → Storage renders a dedicated panel (driver cards / connection
+  string or discrete fields / SSL / demo-seed switch / Redis fields / **Test connection**).
+  Endpoints: `GET|POST /api/admin/database/config` (password never echoed, empty = keep) and
+  `POST /api/admin/database/test` (real connectivity probe, failures → 502 with reason; same
+  endpoint with `target:'cache'` probes Redis). Configuration **takes effect on restart**
+  (the panel says so explicitly). Env vars: DB_DRIVER/DATABASE_URL/DB_HOST/DB_PORT/DB_NAME/
+  DB_USER/DB_PASSWORD/DB_SSL/SEED_DEMO/CACHE_DRIVER/REDIS_URL/REDIS_HOST/REDIS_PORT/
+  REDIS_PASSWORD/REDIS_DB.
+
 ### 4.20 Rich Text Editor (Tiptap) Extension Guide
 
 `richtext` is rendered by `admin/framework/RichTextEditor.vue` (Tiptap v3 + StarterKit + Image/TaskList/TextAlign/Highlight/TextStyle+Color/Sub/Superscript/CharacterCount/Placeholder/Table family) and stores standard HTML.

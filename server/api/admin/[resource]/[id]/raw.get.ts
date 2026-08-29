@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   if (resource !== 'media') {
     throw createError({ statusCode: 404, statusMessage: 'Not found' })
   }
-  requirePermission(event, 'media.view')
+  await requirePermission(event, 'media.view')
 
   const id = Number(getRouterParam(event, 'id'))
   if (!Number.isInteger(id)) {

@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
 
   const revision = findRow('revisions', id) as unknown as RevisionLike
   const cfg = getConfig(revision.resource)
-  requirePermission(event, `${cfg.permissionPrefix}.edit`)
+  await requirePermission(event, `${cfg.permissionPrefix}.edit`)
 
   const current = findRow(revision.resource, revision.recordId)
   snapshotRevision(revision.resource, current)

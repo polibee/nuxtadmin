@@ -4,27 +4,27 @@
  * automatically; restore is an explicit user action.
  * ============================================================= */
 
+import { getKV } from './kv'
+
 export interface AutosaveEntry {
   values: Record<string, unknown>
   savedAt: string
 }
 
-const drafts = new Map<string, AutosaveEntry>()
-
 export function draftKey(resource: string, id: string, userId: number): string {
   return `${resource}:${id}:${userId}`
 }
 
-export function saveAutosave(resource: string, id: string, userId: number, values: Record<string, unknown>): AutosaveEntry {
+export async function saveAutosave(resource: string, id: string, userId: number, values: Record<string, unknown>): Promise<AutosaveEntry> {
   const entry: AutosaveEntry = { values, savedAt: new Date().toISOString() }
-  drafts.set(draftKey(resource, id, userId), entry)
+  await getKV().set(draftKey(resource, id, userId), entry, 60 * 60 * 24 * 7)
   return entry
 }
 
-export function readAutosave(resource: string, id: string, userId: number): AutosaveEntry | undefined {
-  return drafts.get(draftKey(resource, id, userId))
+export async function readAutosave(resource: string, id: string, userId: number): Promise<AutosaveEntry | undefined> {
+  return (await getKV().get(draftKey(resource, id, userId))) as AutosaveEntry | undefined
 }
 
-export function discardAutosave(resource: string, id: string, userId: number): boolean {
-  return drafts.delete(draftKey(resource, id, userId))
+export async function discardAutosave(resource: string, id: string, userId: number): Promise<void> {
+  await getKV().del(draftKey(resource, id, userId))
 }

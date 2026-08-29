@@ -2,6 +2,7 @@
    duplicate h3 copies across @nuxt/nitro-server and standalone h3 */
 import type { AuthUser } from '#shared/types/api'
 import { findRoleByKey } from './db'
+import { getKV } from './kv'
 
 type H3Evt = Parameters<typeof getCookie>[0]
 
@@ -25,9 +26,9 @@ const ACCOUNTS: Account[] = [
 ]
 
 const SESSION_COOKIE = 'admin_session'
-const sessions = new Map<string, AuthUser>()
+const SESSION_TTL = 60 * 60 * 8
 
-export function createSession(email: string, password: string): { token: string, user: AuthUser } | undefined {
+export async function createSession(email: string, password: string): Promise<{ token: string, user: AuthUser } | undefined> {
   const account = ACCOUNTS.find(a => a.email === email && a.password === password)
   if (!account) return undefined
 
@@ -43,21 +44,22 @@ export function createSession(email: string, password: string): { token: string,
     permissions: role?.permissions ?? []
   }
   const token = crypto.randomUUID()
-  sessions.set(token, user)
+  await getKV().set('sess:' + token, user, SESSION_TTL)
   return { token, user }
 }
 
-export function destroySession(token: string): void {
-  sessions.delete(token)
+export async function destroySession(token: string): Promise<void> {
+  await getKV().del('sess:' + token)
 }
 
-export function getSessionUser(event: H3Evt): AuthUser | undefined {
+export async function getSessionUser(event: H3Evt): Promise<AuthUser | undefined> {
   const token = getCookie(event, SESSION_COOKIE)
-  return token ? sessions.get(token) : undefined
+  if (!token) return undefined
+  return (await getKV().get('sess:' + token)) as AuthUser | undefined
 }
 
-export function requireUser(event: H3Evt): AuthUser {
-  const user = getSessionUser(event)
+export async function requireUser(event: H3Evt): Promise<AuthUser> {
+  const user = await getSessionUser(event)
   if (!user) {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
@@ -65,8 +67,8 @@ export function requireUser(event: H3Evt): AuthUser {
 }
 
 /** server-side permission enforcement (defense in depth) */
-export function requirePermission(event: H3Evt, permission: string): AuthUser {
-  const user = requireUser(event)
+export async function requirePermission(event: H3Evt, permission: string): Promise<AuthUser> {
+  const user = await requireUser(event)
   if (user.permissions.includes('*')) return user
   if (user.permissions.includes(permission)) return user
   if (user.permissions.some(p => p.endsWith('.*') && permission.startsWith(p.slice(0, -1)))) return user

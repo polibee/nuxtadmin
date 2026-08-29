@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
   if (resource !== 'media') {
     throw createError({ statusCode: 404, statusMessage: 'Not found' })
   }
-  requirePermission(event, 'media.create')
+  await requirePermission(event, 'media.create')
 
   const parts = await readMultipartFormData(event)
   const file = parts?.find(p => p.name === 'file')

@@ -3,8 +3,8 @@ import { getCollection } from '../../utils/db'
 import { requireUser } from '../../utils/auth'
 
 /** Aggregated data for dashboard widgets. */
-export default defineEventHandler((event) => {
-  requireUser(event)
+export default defineEventHandler(async (event) => {
+  await requireUser(event)
 
   const users = getCollection('users')
   const posts = getCollection('posts')

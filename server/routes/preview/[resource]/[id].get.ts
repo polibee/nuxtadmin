@@ -8,11 +8,11 @@ import { isPreviewableResource, readPreviewToken } from '../../../utils/preview'
  * Renders a minimal standalone HTML page (noindex) that the future
  * theme layer can replace with a real route.
  */
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   const resource = getRouterParam(event, 'resource')!
   const id = Number(getRouterParam(event, 'id'))
 
-  const tokened = readPreviewToken(getQuery(event).t as string | undefined)
+  const tokened = await readPreviewToken(getQuery(event).t as string | undefined)
   if (!tokened || tokened.resource !== resource || tokened.id !== id || !isPreviewableResource(resource)) {
     throw createError({ statusCode: 404, statusMessage: 'Preview not found or expired' })
   }

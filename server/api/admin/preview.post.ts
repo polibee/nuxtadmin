@@ -20,10 +20,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const cfg = getConfig(resource)
-  requirePermission(event, `${cfg.permissionPrefix}.edit`)
+  await requirePermission(event, `${cfg.permissionPrefix}.edit`)
   findRow(resource, id) // 404 when missing
 
-  const { token, expiresInMin } = createPreviewToken(resource, id)
+  const { token, expiresInMin } = await createPreviewToken(resource, id)
   return {
     url: `/preview/${resource}/${id}?t=${token}`,
     expiresInMin

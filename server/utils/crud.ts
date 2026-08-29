@@ -32,9 +32,9 @@ function sanitizeRichTextValues(resource: string, data: Record<string, unknown>)
   }
 }
 
-export function listResource(event: Evt, resource: string) {
+export async function listResource(event: Evt, resource: string) {
   const cfg = getConfig(resource)
-  requirePermission(event, `${cfg.permissionPrefix}.view`)
+  await requirePermission(event, `${cfg.permissionPrefix}.view`)
 
   const query = getQuery(event) as {
     q?: string
@@ -50,13 +50,13 @@ export function listResource(event: Evt, resource: string) {
 
 export async function readResource(event: Evt, resource: string, id: number) {
   const cfg = getConfig(resource)
-  requirePermission(event, `${cfg.permissionPrefix}.view`)
+  await requirePermission(event, `${cfg.permissionPrefix}.view`)
   return findRow(resource, id)
 }
 
 export async function createResource(event: Evt, resource: string, body: Record<string, unknown>) {
   const cfg = getConfig(resource)
-  requirePermission(event, `${cfg.permissionPrefix}.create`)
+  await requirePermission(event, `${cfg.permissionPrefix}.create`)
 
   const result = validateInput(resource, body ?? {}, 'create')
   if (!result.ok) {
@@ -98,7 +98,7 @@ export async function createResource(event: Evt, resource: string, body: Record<
 
 export async function updateResource(event: Evt, resource: string, id: number, body: Record<string, unknown>) {
   const cfg = getConfig(resource)
-  requirePermission(event, `${cfg.permissionPrefix}.edit`)
+  await requirePermission(event, `${cfg.permissionPrefix}.edit`)
 
   const result = validateInput(resource, body ?? {}, 'update')
   if (!result.ok) {
@@ -134,7 +134,7 @@ export async function updateResource(event: Evt, resource: string, id: number, b
 
 export async function deleteResource(event: Evt, resource: string, id: number) {
   const cfg = getConfig(resource)
-  requirePermission(event, `${cfg.permissionPrefix}.delete`)
+  await requirePermission(event, `${cfg.permissionPrefix}.delete`)
 
   const before = findRow(resource, id)
   if (cfg.beforeDelete) {
@@ -159,7 +159,7 @@ export async function deleteResource(event: Evt, resource: string, id: number) {
 
 export async function bulkDeleteResource(event: Evt, resource: string, ids: number[]) {
   const cfg = getConfig(resource)
-  requirePermission(event, `${cfg.permissionPrefix}.delete`)
+  await requirePermission(event, `${cfg.permissionPrefix}.delete`)
 
   if (ids.length === 0) {
     throw createError({ statusCode: 422, statusMessage: 'No ids provided' })

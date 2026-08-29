@@ -7,7 +7,7 @@ import { discardAutosave, readAutosave } from '../../utils/autosave'
  * Pass ?discard=1 to delete it after reading.
  */
 export default defineEventHandler(async (event) => {
-  const user = requireUser(event)
+  const user = await requireUser(event)
   const query = getQuery(event)
 
   const resource = String(query.resource ?? '')
@@ -16,13 +16,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 422, statusMessage: 'resource and id are required' })
   }
   const cfg = getConfig(resource)
-  requirePermission(event, `${cfg.permissionPrefix}.edit`)
+  await requirePermission(event, `${cfg.permissionPrefix}.edit`)
 
-  const entry = readAutosave(resource, id, user.id)
+  const entry = await readAutosave(resource, id, user.id)
   if (!entry) return { draft: null }
 
   if (query.discard === '1') {
-    discardAutosave(resource, id, user.id)
+    await discardAutosave(resource, id, user.id)
   }
   return { draft: entry }
 })

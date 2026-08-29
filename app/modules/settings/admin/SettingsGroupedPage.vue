@@ -3,6 +3,7 @@ import { DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } f
 import type { Paginated } from '#shared/types/api'
 import SettingsGroupForm, { type SettingItem } from './SettingsGroupForm.vue'
 import EmailSettingsPanel from './EmailSettingsPanel.vue'
+import DatabaseSettingsPanel from './DatabaseSettingsPanel.vue'
 
 defineProps<{ resource: { name: string } }>()
 
@@ -155,9 +156,16 @@ function openAdd(group: string): void {
         @change="version++"
       />
 
+      <!-- dedicated driver config panel for the Storage group -->
+      <DatabaseSettingsPanel
+        v-if="activeTab === 'Storage'"
+        class="mt-4"
+        @change="version++"
+      />
+
       <SettingsGroupForm
         v-for="g in groups"
-        v-show="activeTab === g.label && g.label !== 'Email'"
+        v-show="activeTab === g.label && g.label !== 'Email' && g.label !== 'Storage'"
         :key="`${g.label}-${version}`"
         :group="g.label"
         :settings="g.items"

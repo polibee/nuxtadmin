@@ -1,4 +1,5 @@
 import { createError } from 'h3'
+import { persistRemoval, persistUpsert } from './store'
 import type { Paginated } from '#shared/types/api'
 
 /* =============================================================
@@ -293,6 +294,42 @@ export function listCollectionNames(): string[] {
   return [...collections.keys()]
 }
 
+/** boot-time import of a persisted row (keeps its id, bumps the sequence) */
+export function importRow(resource: string, row: AnyRow): void {
+  if (!isKnown(resource)) return
+  const rows = getCollection(resource)
+  rows.push(row)
+  const id = Number(row.id)
+  if (Number.isFinite(id)) {
+    sequences.set(resource, Math.max(sequences.get(resource) ?? 0, id))
+  }
+}
+
+export function clearCollection(resource: string): void {
+  const rows = getCollection(resource)
+  rows.length = 0
+  sequences.set(resource, 0)
+}
+
+/** re-seed demo content into collections that are completely empty */
+export function ensureSeeded(): void {
+  const builders: Record<string, () => AnyRow[]> = {
+    users: () => seedUsers() as unknown as AnyRow[],
+    posts: () => seedPosts() as unknown as AnyRow[],
+    orders: () => seedOrders() as unknown as AnyRow[],
+    roles: () => seedRoles() as unknown as AnyRow[],
+    media: () => seedMedia() as unknown as AnyRow[]
+  }
+  for (const [name, build] of Object.entries(builders)) {
+    if (getCollection(name).length === 0) {
+      for (const row of build()) {
+        importRow(name, row)
+        persistUpsert(name, Number(row.id), row)
+      }
+    }
+  }
+}
+
 export function getCollection(name: string): AnyRow[] {
   if (!isKnown(name)) {
     throw createError({ statusCode: 404, statusMessage: `Unknown resource "${name}"` })
@@ -312,6 +349,7 @@ export function insertRow(name: string, data: Record<string, unknown>): Record<s
   sequences.set(name, nextId)
   const row = { ...data, id: nextId, createdAt: new Date().toISOString() }
   rows.unshift(row)
+  persistUpsert(name, nextId, row)
   return row
 }
 
@@ -324,6 +362,7 @@ export function findRow(name: string, id: number): Record<string, unknown> {
 export function updateRow(name: string, id: number, patch: Record<string, unknown>): Record<string, unknown> {
   const row = findRow(name, id)
   Object.assign(row, patch)
+  persistUpsert(name, id, row)
   return row
 }
 

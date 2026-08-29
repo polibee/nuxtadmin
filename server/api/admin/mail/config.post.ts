@@ -32,7 +32,7 @@ function upsertSetting(key: string, value: string | number | boolean, secret = f
 
 /** POST /api/admin/mail/config — persist provider selection & credentials */
 export default defineEventHandler(async (event) => {
-  requirePermission(event, 'settings.edit')
+  await requirePermission(event, 'settings.edit')
 
   const body = await readBody<ConfigBody>(event)
   if (!body) {
