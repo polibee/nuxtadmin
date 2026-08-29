@@ -54,7 +54,10 @@ const roleBadge = computed<Record<string, string>>(() => ({
           align="end"
           class="z-50 w-36 rounded-md border bg-popover p-1 shadow-md"
         >
-          <DropdownMenuRadioGroup v-model="locale">
+          <DropdownMenuRadioGroup
+            :model-value="locale"
+            @update:model-value="(v) => { locale = v as 'zh-CN' | 'en'; reloadNuxtApp() }"
+          >
             <DropdownMenuRadioItem
               v-for="item in LOCALES"
               :key="item.value"

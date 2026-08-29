@@ -1,4 +1,4 @@
-import type { ColumnDefLite, EntryNode, ModuleDef, SchemaNode } from '~/admin/core/types'
+import type { ColumnDefLite, EntryNode, ModuleDef, SchemaNode, Translator } from '~/admin/core/types'
 
 interface ContentTypeField {
   name: string
@@ -55,11 +55,11 @@ const STATUS_BADGES = {
   archived: { label: 'Archived', variant: 'secondary' }
 } as const
 
-function lifecycleActions(name: string): ColumnDefLite {
+function lifecycleActions(name: string, t: Translator): ColumnDefLite {
   return actionsColumn([
     defineAction({
       name: 'publish',
-      label: 'Publish',
+      label: t('status.published'),
       icon: 'badge-check',
       permission: 'content.edit',
       visible: record => record.status !== 'published',
@@ -68,13 +68,13 @@ function lifecycleActions(name: string): ColumnDefLite {
           method: 'PUT',
           body: { status: 'published', publishedAt: new Date().toISOString() }
         })
-        notify('Published')
+        notify(t('notify.published'))
         emitAdminEvent(`${name}:refresh`)
       }
     }),
     defineAction({
       name: 'preview',
-      label: 'Preview',
+      label: t('common.preview'),
       icon: 'eye',
       permission: 'content.edit',
       visible: record => record.status !== 'published',
@@ -88,13 +88,13 @@ function lifecycleActions(name: string): ColumnDefLite {
     }),
     defineAction({
       name: 'schedule',
-      label: 'Schedule',
+      label: t('status.scheduled'),
       icon: 'clock',
       permission: 'content.edit',
       visible: record => record.status !== 'published' && record.status !== 'scheduled',
       form: () => [
-        section('Scheduled Publishing', [
-          dateInput('scheduledAt', 'Publish at', { required: true })
+        section(t('status.scheduled'), [
+          dateInput('scheduledAt', t('status.published'), { required: true })
         ])
       ],
       handler: async ({ record, values }) => {
@@ -102,23 +102,23 @@ function lifecycleActions(name: string): ColumnDefLite {
           method: 'PUT',
           body: { status: 'scheduled', scheduledAt: values!.scheduledAt }
         })
-        notify(`Scheduled for ${values!.scheduledAt}`)
+        notify(t('notify.scheduledFor', { time: String(values!.scheduledAt) }))
         emitAdminEvent(`${name}:refresh`)
       }
     }),
     defineAction({
       name: 'unpublish',
-      label: 'Unpublish',
+      label: t('status.draft'),
       icon: 'eye',
       permission: 'content.edit',
       visible: record => record.status === 'published',
-      confirm: { title: 'Move this entry back to draft?', confirmLabel: 'Unpublish' },
+      confirm: { title: t('notify.movedToDraft'), confirmLabel: t('common.confirm') },
       handler: async ({ record }) => {
         await $fetch(`/api/admin/${name}/${record!.id}`, {
           method: 'PUT',
           body: { status: 'draft' }
         })
-        notify('Moved to draft')
+        notify(t('notify.movedToDraft'))
         emitAdminEvent(`${name}:refresh`)
       }
     })
@@ -131,6 +131,7 @@ function lifecycleActions(name: string): ColumnDefLite {
  * registered) and the boot plugin for every stored type.
  */
 export function buildContentModule(ct: ContentTypeLike): ModuleDef {
+  const { t } = useI18n()
   const name = `ct_${ct.slug}`
   const resource = defineResource({
     name,
@@ -146,11 +147,11 @@ export function buildContentModule(ct: ContentTypeLike): ModuleDef {
     table: () => [
       textColumn('id', 'ID', { sortable: true }),
       ...ct.fields.map(columnFor),
-      badgeColumn('status', 'Status', STATUS_BADGES),
-      dateColumn('scheduledAt', 'Scheduled'),
-      dateColumn('publishedAt', 'Published'),
-      dateColumn('createdAt', 'Created', { sortable: true }),
-      lifecycleActions(name)
+      badgeColumn('status', t('res.posts.field.status'), STATUS_BADGES),
+      dateColumn('scheduledAt', t('status.scheduled')),
+      dateColumn('publishedAt', t('status.published')),
+      dateColumn('createdAt', t('res.ct.col.created'), { sortable: true }),
+      lifecycleActions(name, t)
     ],
     form: () => [
       ...ct.fields.map(fieldFor),

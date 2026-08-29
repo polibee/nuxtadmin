@@ -231,9 +231,14 @@ export interface PanelConfig {
 
 /* ---------------- Module ---------------- */
 
+export type Translator = (key: string, params?: Record<string, string | number>) => string
+
 export interface ModuleDef {
   name: string
   resources?: AdminResource[]
   widgets?: WidgetDef[]
   navGroups?: Array<{ label: string, sort?: number }>
 }
+
+/** a module can be a plain definition or a factory receiving the i18n translator */
+export type ModuleInput = ModuleDef | ((t: Translator) => ModuleDef)

@@ -1,27 +1,29 @@
-export default defineResource({
+import type { Translator } from '~/admin/core/types'
+
+export default (t: Translator) => defineResource({
   name: 'content-types',
   model: 'ContentType',
-  label: 'Content Type',
-  labelPlural: 'Content Types',
+  label: t('res.ct.label'),
+  labelPlural: t('res.ct.plural'),
   icon: 'box',
-  group: 'System',
+  group: t('res.ct.group'),
   sort: 92,
   permissionPrefix: 'content-types',
   searchable: ['name'],
 
   table: () => [
-    textColumn('name', 'Name', { sortable: true }),
-    textColumn('slug', 'Slug'),
-    tagsColumn('fields', 'Fields'),
-    dateColumn('createdAt', 'Created', { sortable: true }),
+    textColumn('name', t('res.ct.field.name'), { sortable: true }),
+    textColumn('slug', t('res.ct.col.slug')),
+    tagsColumn('fields', t('res.ct.col.fields')),
+    dateColumn('createdAt', t('res.ct.col.created'), { sortable: true }),
     actionsColumn([
       defineAction({
         name: 'reload-registry',
-        label: 'Reload Registry',
+        label: t('res.ct.reloadRegistry'),
         icon: 'activity',
         permission: 'content-types.edit',
         handler: async () => {
-          notify('Reloading registry…')
+          notify(t('res.ct.reloading'))
           reloadNuxtApp()
         }
       })
@@ -29,34 +31,34 @@ export default defineResource({
   ],
 
   form: () => [
-    section('Identity', [
+    section(t('res.ct.section.identity'), [
       grid(2, [
-        textInput('name', 'Name', { required: true, placeholder: 'Product' }),
-        textInput('slug', 'Slug', { placeholder: 'Auto-generated if empty', helpText: 'Collection identifier, immutable after create.' })
+        textInput('name', t('res.ct.field.name'), { required: true, placeholder: 'Product' }),
+        textInput('slug', 'Slug', { placeholder: 'Auto-generated if empty', helpText: t('res.ct.slugHint') })
       ])
     ]),
-    section('Fields', [
-      repeaterInput('fields', 'Add Field', [
-        textInput('name', 'Field name', { required: true, placeholder: 'title' }),
-        textInput('label', 'Label', { required: true, placeholder: 'Title' }),
-        selectInput('type', 'Type', [
-          { label: 'Text', value: 'string' },
-          { label: 'Number', value: 'number' },
-          { label: 'Boolean', value: 'boolean' },
-          { label: 'Select', value: 'select' },
-          { label: 'Date', value: 'date' },
-          { label: 'Rich Text', value: 'richtext' }
+    section(t('res.ct.section.fields'), [
+      repeaterInput('fields', t('res.ct.addField'), [
+        textInput('name', t('res.ct.field.fieldName'), { required: true, placeholder: 'title' }),
+        textInput('label', t('res.ct.field.label'), { required: true, placeholder: 'Title' }),
+        selectInput('type', t('res.ct.field.type'), [
+          { label: t('res.ct.type.string'), value: 'string' },
+          { label: t('res.ct.type.number'), value: 'number' },
+          { label: t('res.ct.type.boolean'), value: 'boolean' },
+          { label: t('res.ct.type.select'), value: 'select' },
+          { label: t('res.ct.type.date'), value: 'date' },
+          { label: t('res.ct.type.richtext'), value: 'richtext' }
         ], { defaultValue: 'string' }),
-        textInput('options', 'Options (csv, select only)', { placeholder: 'foo,bar,baz' }),
-        switchInput('required', 'Required')
+        textInput('options', t('res.ct.field.options'), { placeholder: 'foo,bar,baz' }),
+        switchInput('required', t('res.ct.field.required'))
       ])
     ])
   ],
 
   infolist: () => [
-    textEntry('name', 'Name'),
-    textEntry('slug', 'Slug'),
-    tagsEntry('fields', 'Fields'),
-    datetimeEntry('createdAt', 'Created')
+    textEntry('name', t('res.ct.field.name')),
+    textEntry('slug', t('res.ct.col.slug')),
+    tagsEntry('fields', t('res.ct.col.fields')),
+    datetimeEntry('createdAt', t('res.ct.col.created'))
   ]
 })

@@ -1,61 +1,65 @@
-const statusBadges = {
-  active: { label: 'Active', variant: 'success' },
-  inactive: { label: 'Inactive', variant: 'secondary' }
-} as const
+import type { BadgeStyle, Translator } from '~/admin/core/types'
 
-const roleOptions = [
-  { label: 'Administrator', value: 'admin' },
-  { label: 'Editor', value: 'editor' },
-  { label: 'Viewer', value: 'viewer' }
-]
+export default (t: Translator) => {
+  const statusBadges = (): Record<string | number, BadgeStyle> => ({
+    active: { label: t('status.active'), variant: 'success' },
+    inactive: { label: t('status.inactive'), variant: 'secondary' }
+  })
 
-export default defineResource({
-  name: 'users',
-  model: 'User',
-  label: 'User',
-  labelPlural: 'Users',
-  icon: 'users',
-  group: 'User Management',
-  sort: 10,
-  searchable: ['name', 'email'],
+  const roleBadges = (): Record<string | number, BadgeStyle> => ({
+    admin: { label: t('res.users.role.admin'), variant: 'default' },
+    editor: { label: t('res.users.role.editor'), variant: 'warning' },
+    viewer: { label: t('res.users.role.viewer'), variant: 'secondary' }
+  })
 
-  table: () => [
-    textColumn('name', 'Name', { sortable: true }),
-    textColumn('email', 'Email'),
-    badgeColumn('role', 'Role', {
-      admin: { label: 'Admin', variant: 'default' },
-      editor: { label: 'Editor', variant: 'warning' },
-      viewer: { label: 'Viewer', variant: 'secondary' }
-    }),
-    badgeColumn('status', 'Status', statusBadges),
-    dateColumn('createdAt', 'Joined', { sortable: true })
-  ],
-
-  form: () => [
-    section('Account', [
-      grid(2, [
-        textInput('name', 'Name', { required: true, placeholder: 'Jane Doe' }),
-        emailInput('email', 'Email', { required: true, placeholder: 'jane@example.com' })
-      ]),
-      grid(2, [
-        selectInput('role', 'Role', roleOptions, { defaultValue: 'viewer' }),
-        selectInput('status', 'Status', [
-          { label: 'Active', value: 'active' },
-          { label: 'Inactive', value: 'inactive' }
-        ], { defaultValue: 'active' })
-      ])
-    ])
-  ],
-
-  infolist: () => [
-    textEntry('name', 'Name'),
-    textEntry('email', 'Email'),
-    badgeEntry('role', 'Role', {
-      admin: { label: 'Admin', variant: 'default' },
-      editor: { label: 'Editor', variant: 'warning' },
-      viewer: { label: 'Viewer', variant: 'secondary' }
-    }),
-    badgeEntry('status', 'Status', statusBadges),
-    dateEntry('createdAt', 'Joined')
+  const roleOptions = [
+    { label: t('res.users.role.admin'), value: 'admin' },
+    { label: t('res.users.role.editor'), value: 'editor' },
+    { label: t('res.users.role.viewer'), value: 'viewer' }
   ]
-})
+
+  const statusOptions = [
+    { label: t('status.active'), value: 'active' },
+    { label: t('status.inactive'), value: 'inactive' }
+  ]
+
+  return defineResource({
+    name: 'users',
+    model: 'User',
+    label: t('res.users.label'),
+    labelPlural: t('res.users.plural'),
+    icon: 'users',
+    group: t('res.users.group'),
+    sort: 10,
+    searchable: ['name', 'email'],
+
+    table: () => [
+      textColumn('name', t('res.users.col.name'), { sortable: true }),
+      textColumn('email', t('res.users.col.email')),
+      badgeColumn('role', t('res.users.col.role'), roleBadges()),
+      badgeColumn('status', t('res.users.col.status'), statusBadges()),
+      dateColumn('createdAt', t('res.users.col.joined'), { sortable: true })
+    ],
+
+    form: () => [
+      section(t('res.users.section.account'), [
+        grid(2, [
+          textInput('name', t('res.users.field.name'), { required: true, placeholder: 'Jane Doe' }),
+          emailInput('email', t('res.users.field.email'), { required: true, placeholder: 'jane@example.com' })
+        ]),
+        grid(2, [
+          selectInput('role', t('res.users.field.role'), roleOptions, { defaultValue: 'viewer' }),
+          selectInput('status', t('res.users.field.status'), statusOptions, { defaultValue: 'active' })
+        ])
+      ])
+    ],
+
+    infolist: () => [
+      textEntry('name', t('res.users.field.name')),
+      textEntry('email', t('res.users.field.email')),
+      badgeEntry('role', t('res.users.col.role'), roleBadges()),
+      badgeEntry('status', t('res.users.col.status'), statusBadges()),
+      dateEntry('createdAt', t('res.users.col.joined'))
+    ]
+  })
+}

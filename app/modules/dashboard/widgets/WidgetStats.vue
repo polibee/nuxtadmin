@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { CreditCardIcon, FileTextIcon, ShoppingCartIcon, UsersIcon } from 'lucide-vue-next'
+import { useI18n } from '~/admin/i18n'
+
+const { t } = useI18n()
 
 interface Stats {
   usersTotal: number
@@ -21,10 +24,10 @@ onMounted(async () => {
 })
 
 const cards = computed(() => [
-  { label: 'Total Users', value: stats.value?.usersTotal, sub: `${stats.value?.usersActive ?? 0} active`, icon: UsersIcon },
-  { label: 'Posts', value: stats.value?.postsTotal, sub: `${stats.value?.postsPublished ?? 0} published`, icon: FileTextIcon },
-  { label: 'Orders', value: stats.value?.ordersTotal, icon: ShoppingCartIcon },
-  { label: 'Revenue', value: stats.value ? `$${stats.value.totalRevenue.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : undefined, icon: CreditCardIcon }
+  { label: t('widget.totalUsers'), value: stats.value?.usersTotal, sub: t('widget.active', { n: stats.value?.usersActive ?? 0 }), icon: UsersIcon },
+  { label: t('widget.posts'), value: stats.value?.postsTotal, sub: t('widget.published', { n: stats.value?.postsPublished ?? 0 }), icon: FileTextIcon },
+  { label: t('widget.orders'), value: stats.value?.ordersTotal, icon: ShoppingCartIcon },
+  { label: t('widget.revenue'), value: stats.value ? `$${stats.value.totalRevenue.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : undefined, icon: CreditCardIcon }
 ])
 </script>
 

@@ -126,11 +126,10 @@ function openAdd(group: string): void {
   <div class="space-y-6">
     <div>
       <h1 class="text-2xl font-semibold tracking-tight">
-        Settings
+        {{ t('settings.title') }}
       </h1>
       <p class="text-sm text-muted-foreground">
-        Grouped configuration · <code class="text-xs">public</code> settings are exposed at
-        <code class="text-xs">/api/public-settings</code>, secrets never leave the admin.
+        {{ t('settings.subtitle') }}
       </p>
     </div>
 
@@ -171,7 +170,7 @@ function openAdd(group: string): void {
 
     <UiEmpty v-else>
       <template #title>
-        No settings defined.
+        {{ t('settings.noGroups') }}
       </template>
       <UiButton
         v-if="canEdit"
@@ -191,7 +190,7 @@ function openAdd(group: string): void {
         <DialogOverlay class="fixed inset-0 z-50 bg-black/60" />
         <DialogContent class="fixed left-1/2 top-1/2 z-50 max-h-[85vh] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border bg-card p-6 shadow-lg focus:outline-none">
           <DialogTitle class="text-base font-semibold">
-            New setting · {{ addGroup }}
+            {{ t('settings.newIn', { group: addGroup }) }}
           </DialogTitle>
 
           <form
@@ -206,16 +205,16 @@ function openAdd(group: string): void {
               <UiInput
                 id="new-label"
                 v-model="newLabel"
-                placeholder="Site Name"
+                :placeholder="t('settings.namePlaceholder')"
               />
               <div class="flex items-center gap-2 text-xs">
                 <template v-if="newKey">
-                  <span class="text-muted-foreground">Stored as</span>
+                  <span class="text-muted-foreground">{{ t('settings.storedAs') }}</span>
                   <code class="rounded bg-muted px-1.5 py-0.5 font-semibold">{{ newKey }}</code>
                   <span
                     v-if="keyTaken"
                     class="text-destructive"
-                  >already exists</span>
+                  >{{ t('settings.keyTaken') }}</span>
                 </template>
               </div>
             </div>
@@ -228,10 +227,10 @@ function openAdd(group: string): void {
               <UiInput
                 id="new-value"
                 v-model="newValueRaw"
-                placeholder="e.g. My Site · 24 · true"
+                :placeholder="t('settings.valuePlaceholder')"
               />
               <div class="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Detected type</span>
+                <span>{{ t('settings.detectedType') }}</span>
                 <UiBadge
                   variant="secondary"
                   class="capitalize"
@@ -243,7 +242,7 @@ function openAdd(group: string): void {
 
             <!-- visibility -->
             <div class="space-y-1.5">
-              <UiLabel>Visibility</UiLabel>
+              <UiLabel>{{ t('settings.visibility') }}</UiLabel>
               <div class="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -255,7 +254,7 @@ function openAdd(group: string): void {
                     Public
                   </p>
                   <p class="mt-0.5 text-xs text-muted-foreground">
-                    Exposed at /api/public-settings
+                    {{ t('settings.publicHint') }}
                   </p>
                 </button>
                 <button
@@ -268,7 +267,7 @@ function openAdd(group: string): void {
                     Private
                   </p>
                   <p class="mt-0.5 text-xs text-muted-foreground">
-                    Admin only · never exposed
+                    {{ t('settings.privateHint') }}
                   </p>
                 </button>
               </div>
@@ -277,13 +276,13 @@ function openAdd(group: string): void {
             <!-- description -->
             <div class="space-y-1.5">
               <UiLabel for="new-desc">
-                Description <span class="text-muted-foreground">(optional)</span>
+                {{ t('settings.description') }}
               </UiLabel>
               <UiTextarea
                 id="new-desc"
                 v-model="newDescription"
                 :rows="2"
-                placeholder="What is this setting used for?"
+                :placeholder="t('settings.descPlaceholder')"
               />
             </div>
 

@@ -283,13 +283,28 @@ type ValidateResult
   = | { ok: true, data: Record<string, unknown> }
     | { ok: false, message: string }
 
-/** recursive sanitizer for list-typed values: primitives stay, objects keep primitive props */
+/** event-handler style keys (onclick, onerror…) are never allowed through */
+const EVENT_KEY_RE = /^on/i
+/** javascript:/data: URIs in stored strings are never allowed through */
+const SCRIPT_SCHEME_RE = /^\s*(javascript|data|vbscript):/i
+
+/**
+ * Recursive sanitizer for list-typed values: primitives stay, objects
+ * keep primitive props MINUS event-handler keys and script-scheme values.
+ * (Denylist for known-dangerous patterns; rendering-side escaping is
+ * the primary defense - this is defense in depth for stored JSON.)
+ */
 function sanitizeListItem(item: unknown): unknown {
-  if (item === null || typeof item !== 'object') return item
+  if (item === null || typeof item !== 'object') {
+    if (typeof item === 'string' && SCRIPT_SCHEME_RE.test(item)) return ''
+    return item
+  }
   if (Array.isArray(item)) return item.map(sanitizeListItem)
   const clean: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(item as Record<string, unknown>)) {
+    if (EVENT_KEY_RE.test(k)) continue
     if (v === null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+      if (typeof v === 'string' && SCRIPT_SCHEME_RE.test(v)) continue
       clean[k] = v
     } else if (Array.isArray(v)) {
       clean[k] = v.map(sanitizeListItem)

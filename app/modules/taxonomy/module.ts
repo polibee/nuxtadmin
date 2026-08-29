@@ -1,7 +1,7 @@
 import TaxonomyResource from './admin/TaxonomyResource'
 
-export default defineModule({
+export default defineModule(t => ({
   name: 'taxonomy',
-  resources: [TaxonomyResource],
-  navGroups: [{ label: 'Content Structure', sort: 40 }]
-})
+  resources: [TaxonomyResource(t)],
+  navGroups: [{ label: t('res.taxonomy.group'), sort: 45 }]
+}))

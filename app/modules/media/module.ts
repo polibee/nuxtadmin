@@ -1,7 +1,7 @@
 import MediaResource from './admin/MediaResource'
 
-export default defineModule({
+export default defineModule(t => ({
   name: 'media',
-  resources: [MediaResource],
-  navGroups: [{ label: 'Media Library', sort: 40 }]
-})
+  resources: [MediaResource(t)],
+  navGroups: [{ label: t('res.media.group'), sort: 40 }]
+}))

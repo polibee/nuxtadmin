@@ -1,7 +1,7 @@
 import RevisionResource from './admin/RevisionResource'
 
-export default defineModule({
+export default defineModule(t => ({
   name: 'revisions',
-  resources: [RevisionResource],
-  navGroups: [{ label: 'System', sort: 90 }]
-})
+  resources: [RevisionResource(t)],
+  navGroups: [{ label: t('res.revisions.group'), sort: 96 }]
+}))

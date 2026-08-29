@@ -1,10 +1,12 @@
-export default defineResource({
+import type { Translator } from '~/admin/core/types'
+
+export default (t: Translator) => defineResource({
   name: 'media',
   model: 'Media',
-  label: 'Media',
-  labelPlural: 'Media',
+  label: t('res.media.label'),
+  labelPlural: t('res.media.plural'),
   icon: 'image',
-  group: 'Media Library',
+  group: t('res.media.group'),
   sort: 40,
   permissionPrefix: 'media',
   searchable: ['filename'],
@@ -13,14 +15,14 @@ export default defineResource({
 
   table: () => [
     imageColumn('url', ''),
-    textColumn('filename', 'Filename', { sortable: true }),
-    textColumn('mime', 'Type'),
-    numberColumn('size', 'Size (bytes)'),
-    dateColumn('createdAt', 'Uploaded', { sortable: true }),
+    textColumn('filename', t('res.media.col.filename'), { sortable: true }),
+    textColumn('mime', t('res.media.col.type')),
+    numberColumn('size', t('res.media.col.size')),
+    dateColumn('createdAt', t('res.media.col.uploaded'), { sortable: true }),
     actionsColumn([
       defineAction({
         name: 'preview',
-        label: 'Open',
+        label: t('res.media.open'),
         icon: 'eye',
         permission: 'media.view',
         handler: async ({ record }) => {
@@ -31,16 +33,16 @@ export default defineResource({
   ],
 
   form: () => [
-    section('Upload', [
-      fileInput('file', 'File', { required: true, helpText: 'Max 10MB per file.' })
+    section(t('res.media.section.upload'), [
+      fileInput('file', t('res.media.field.file'), { required: true, helpText: t('res.media.fileHint') })
     ])
   ],
 
   infolist: () => [
-    textEntry('filename', 'Filename'),
-    textEntry('mime', 'Type'),
-    textEntry('size', 'Size', { suffix: ' bytes' }),
-    datetimeEntry('createdAt', 'Uploaded'),
+    textEntry('filename', t('res.media.col.filename')),
+    textEntry('mime', t('res.media.col.type')),
+    textEntry('size', t('res.media.col.size')),
+    datetimeEntry('createdAt', t('res.media.col.uploaded')),
     linkEntry('url', 'URL')
   ]
 })

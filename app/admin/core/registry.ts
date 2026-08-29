@@ -1,6 +1,6 @@
 import type {
   AdminResource,
-  ModuleDef,
+  ModuleInput,
   NavGroup,
   NavItem,
   PanelConfig,
@@ -54,14 +54,15 @@ export function registerWidget(widget: WidgetDef): void {
   state.widgets.set(widget.name, widget)
 }
 
-export function registerModule(module: ModuleDef): void {
-  if (state.modules.has(module.name)) return
-  state.modules.set(module.name, module)
-  for (const g of module.navGroups ?? []) {
+export function registerModule(module: ModuleInput): void {
+  const def = typeof module === 'function' ? module(useI18n().t) : module
+  if (state.modules.has(def.name)) return
+  state.modules.set(def.name, def)
+  for (const g of def.navGroups ?? []) {
     if (g.sort !== undefined) state.navGroups.set(g.label, g.sort)
   }
-  for (const r of module.resources ?? []) registerResource(r)
-  for (const w of module.widgets ?? []) registerWidget(w)
+  for (const r of def.resources ?? []) registerResource(r)
+  for (const w of def.widgets ?? []) registerWidget(w)
 }
 
 function resolve(resource: AdminResource): ResolvedResource {

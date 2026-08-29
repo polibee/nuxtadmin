@@ -1,10 +1,10 @@
-import type { ModuleDef } from '../core/types'
+import type { ModuleInput } from '../core/types'
 
 /**
- * Identity helper for business modules.
- * A module bundles resources + widgets + nav groups into one
- * registrable unit - the Nuxt equivalent of a Laravel Service Provider.
+ * Identity helper for business modules. Accepts a plain definition or
+ * a factory receiving the i18n translator - factories let modules
+ * resolve their labels in the active locale at registration time.
  */
-export function defineModule(module: ModuleDef): ModuleDef {
+export function defineModule(module: ModuleInput): ModuleInput {
   return module
 }

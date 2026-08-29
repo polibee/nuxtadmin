@@ -22,9 +22,9 @@ const emit = defineEmits<{ change: [] }>()
 const { t } = useI18n()
 
 const providers = [
-  { value: 'smtp', label: 'SMTP', icon: ServerIcon, hint: 'Any generic SMTP server' },
-  { value: 'aliyun', label: '阿里云邮件推送', icon: MailIcon, hint: 'DirectMail · smtpdm 区域预设' },
-  { value: 'resend', label: 'Resend', icon: AtSignIcon, hint: 'resend.com HTTP API' }
+  { value: 'smtp', label: t('mail.provider.smtp'), icon: ServerIcon, hint: t('mail.provider.smtpHint') },
+  { value: 'aliyun', label: t('mail.provider.aliyun'), icon: MailIcon, hint: t('mail.provider.aliyunHint') },
+  { value: 'resend', label: t('mail.provider.resend'), icon: AtSignIcon, hint: t('mail.provider.resendHint') }
 ] as const
 
 const regions = [
@@ -46,7 +46,7 @@ onMounted(async () => {
   try {
     config.value = await $fetch<MailConfig>('/api/admin/mail/config')
   } catch (e: unknown) {
-    notifyError('Failed to load mail config', (e as Error).message)
+    notifyError(t('mail.loadFailed'), (e as Error).message)
   } finally {
     loading.value = false
   }
@@ -77,10 +77,10 @@ async function save(): Promise<void> {
         resend: { apiKey: pass.value.resend }
       }
     })
-    notify('Email configuration saved')
+    notify(t('common.saveChanges'))
     emit('change')
   } catch (e: unknown) {
-    notifyError('Save failed', (e as Error).message)
+    notifyError(t('mail.saveFailed'), (e as Error).message)
   } finally {
     saving.value = false
   }
@@ -95,7 +95,7 @@ async function sendTest(): Promise<void> {
       method: 'POST',
       body: { to: testTo.value.trim() }
     })
-    testResult.value = { ok: true, message: `Sent via ${res.provider}` }
+    testResult.value = { ok: true, message: t('mail.sentVia', { provider: res.provider }) }
   } catch (e: unknown) {
     const err = e as { data?: { statusMessage?: string } }
     testResult.value = { ok: false, message: err?.data?.statusMessage ?? (e as Error).message }
@@ -150,18 +150,18 @@ async function sendTest(): Promise<void> {
     <!-- common sender identity -->
     <div class="rounded-xl border p-4">
       <h3 class="mb-3 text-sm font-semibold">
-        Sender identity
+        {{ t('mail.senderIdentity') }}
       </h3>
       <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div class="space-y-1.5">
-          <UiLabel>From name</UiLabel>
+          <UiLabel>{{ t('mail.fromName') }}</UiLabel>
           <UiInput
             v-model="config.fromName"
-            placeholder="Nuxt Admin"
+            :placeholder="t('settings.namePlaceholder')"
           />
         </div>
         <div class="space-y-1.5">
-          <UiLabel>From address</UiLabel>
+          <UiLabel>{{ t('mail.fromAddress') }}</UiLabel>
           <UiInput
             v-model="config.fromAddress"
             placeholder="noreply@example.com"
@@ -176,18 +176,18 @@ async function sendTest(): Promise<void> {
       class="rounded-xl border p-4"
     >
       <h3 class="mb-3 text-sm font-semibold">
-        SMTP server
+        {{ t('mail.smtpServer') }}
       </h3>
       <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div class="space-y-1.5">
-          <UiLabel>Host</UiLabel>
+          <UiLabel>{{ t('mail.host') }}</UiLabel>
           <UiInput
             v-model="config.smtp.host"
             placeholder="smtp.example.com"
           />
         </div>
         <div class="space-y-1.5">
-          <UiLabel>Port</UiLabel>
+          <UiLabel>{{ t('mail.port') }}</UiLabel>
           <UiInput
             v-model="config.smtp.port as unknown as string"
             type="number"
@@ -195,14 +195,14 @@ async function sendTest(): Promise<void> {
           />
         </div>
         <div class="space-y-1.5">
-          <UiLabel>Username</UiLabel>
+          <UiLabel>{{ t('mail.username') }}</UiLabel>
           <UiInput
             v-model="config.smtp.user"
             placeholder="user@example.com"
           />
         </div>
         <div class="space-y-1.5">
-          <UiLabel>Password</UiLabel>
+          <UiLabel>{{ t('mail.password') }}</UiLabel>
           <UiInput
             v-model="pass.smtp"
             type="password"
@@ -211,7 +211,7 @@ async function sendTest(): Promise<void> {
         </div>
         <div class="flex items-center md:col-span-2">
           <UiSwitch v-model="config.smtp.secure">
-            <span class="text-sm">Use SSL/TLS (port 465)</span>
+            <span class="text-sm">{{ t('mail.useTls') }}</span>
           </UiSwitch>
         </div>
       </div>
@@ -223,14 +223,14 @@ async function sendTest(): Promise<void> {
       class="rounded-xl border p-4"
     >
       <h3 class="mb-1 text-sm font-semibold">
-        阿里云邮件推送 · DirectMail
+        {{ t('mail.aliyunTitle') }}
       </h3>
       <p class="mb-3 text-xs text-muted-foreground">
-        通过 SMTP 465（SSL）端口发送；发信地址需在阿里云控制台创建并验证。
+        {{ t('mail.aliyunHint') }}
       </p>
       <div class="grid grid-cols-1 gap-3">
         <div class="space-y-1.5">
-          <UiLabel>服务区域（SMTP 接入点自动匹配）</UiLabel>
+          <UiLabel>{{ t('mail.region') }}</UiLabel>
           <UiSelect
             v-model="config.aliyun.region as unknown as string"
             :options="regions"
@@ -238,14 +238,14 @@ async function sendTest(): Promise<void> {
         </div>
         <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
           <div class="space-y-1.5">
-            <UiLabel>发信地址（SMTP 用户）</UiLabel>
+            <UiLabel>{{ t('mail.aliyunUser') }}</UiLabel>
             <UiInput
               v-model="config.aliyun.user"
               placeholder="sender@mail.example.com"
             />
           </div>
           <div class="space-y-1.5">
-            <UiLabel>SMTP 密码</UiLabel>
+            <UiLabel>{{ t('mail.aliyunPass') }}</UiLabel>
             <UiInput
               v-model="pass.aliyun"
               type="password"
@@ -262,13 +262,13 @@ async function sendTest(): Promise<void> {
       class="rounded-xl border p-4"
     >
       <h3 class="mb-1 text-sm font-semibold">
-        Resend
+        {{ t('mail.provider.resend') }}
       </h3>
       <p class="mb-3 text-xs text-muted-foreground">
-        API key from resend.com/api-tokens · sent server-side only, never exposed.
+        {{ t('mail.resendHint') }}
       </p>
       <div class="space-y-1.5">
-        <UiLabel>API key</UiLabel>
+        <UiLabel>{{ t('mail.resendKey') }}</UiLabel>
         <UiInput
           v-model="pass.resend"
           type="password"
@@ -282,7 +282,7 @@ async function sendTest(): Promise<void> {
       <div class="flex items-center gap-2">
         <UiInput
           v-model="testTo"
-          placeholder="Send test to: you@example.com"
+          :placeholder="t('mail.testTo')"
           class="w-64"
         />
         <UiButton
@@ -292,7 +292,7 @@ async function sendTest(): Promise<void> {
           :disabled="testing"
           @click="sendTest"
         >
-          <SendIcon /> {{ testing ? 'Sending…' : 'Send test' }}
+          <SendIcon /> {{ testing ? t('mail.sending') : t('mail.sendTest') }}
         </UiButton>
         <span
           v-if="testResult"

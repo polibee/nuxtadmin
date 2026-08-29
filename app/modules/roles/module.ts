@@ -1,7 +1,7 @@
 import RoleResource from './admin/RoleResource'
 
-export default defineModule({
+export default defineModule(t => ({
   name: 'roles',
-  resources: [RoleResource],
-  navGroups: [{ label: 'System', sort: 90 }]
-})
+  resources: [RoleResource(t)],
+  navGroups: [{ label: t('res.roles.group'), sort: 91 }]
+}))

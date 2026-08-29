@@ -1,54 +1,56 @@
-export default defineResource({
+import type { Translator } from '~/admin/core/types'
+
+export default (t: Translator) => defineResource({
   name: 'menus',
   model: 'Menu',
-  label: 'Menu',
-  labelPlural: 'Menus',
+  label: t('res.menus.label'),
+  labelPlural: t('res.menus.plural'),
   icon: 'menu',
-  group: 'Content Structure',
+  group: t('res.menus.group'),
   sort: 46,
   permissionPrefix: 'menus',
   searchable: ['name'],
 
   table: () => [
-    textColumn('name', 'Name', { sortable: true }),
-    badgeColumn('location', 'Location', {
-      header: { label: 'Header', variant: 'default' },
-      footer: { label: 'Footer', variant: 'secondary' },
-      custom: { label: 'Custom', variant: 'warning' }
+    textColumn('name', t('res.menus.field.name'), { sortable: true }),
+    badgeColumn('location', t('res.menus.field.location'), {
+      header: { label: t('res.menus.loc.header'), variant: 'default' },
+      footer: { label: t('res.menus.loc.footer'), variant: 'secondary' },
+      custom: { label: t('res.menus.loc.custom'), variant: 'warning' }
     }),
-    numberColumn('itemCount', 'Items')
+    numberColumn('itemCount', t('res.menus.col.items'))
   ],
 
   form: () => [
-    section('Definition', [
+    section(t('res.menus.section.definition'), [
       grid(2, [
-        textInput('name', 'Name', { required: true, placeholder: 'Main Navigation' }),
-        selectInput('location', 'Location', [
-          { label: 'Header', value: 'header' },
-          { label: 'Footer', value: 'footer' },
-          { label: 'Custom', value: 'custom' }
+        textInput('name', t('res.menus.field.name'), { required: true, placeholder: 'Main Navigation' }),
+        selectInput('location', t('res.menus.field.location'), [
+          { label: t('res.menus.loc.header'), value: 'header' },
+          { label: t('res.menus.loc.footer'), value: 'footer' },
+          { label: t('res.menus.loc.custom'), value: 'custom' }
         ], { defaultValue: 'header' })
       ])
     ]),
-    section('Menu Items (nested)', [
-      repeaterInput('items', 'Add Item', [
-        textInput('label', 'Label', { required: true, placeholder: 'Blog' }),
-        textInput('url', 'URL', { required: true, placeholder: '/blog' }),
-        repeaterInput('children', 'Add Child', [
-          textInput('label', 'Label', { required: true }),
-          textInput('url', 'URL', { required: true })
+    section(t('res.menus.field.items'), [
+      repeaterInput('items', t('res.menus.addItem'), [
+        textInput('label', t('res.menus.field.label'), { required: true, placeholder: 'Blog' }),
+        textInput('url', t('res.menus.field.url'), { required: true, placeholder: '/blog' }),
+        repeaterInput('children', t('res.menus.addChild'), [
+          textInput('label', t('res.menus.field.label'), { required: true }),
+          textInput('url', t('res.menus.field.url'), { required: true })
         ])
       ])
     ])
   ],
 
   infolist: () => [
-    textEntry('name', 'Name'),
-    badgeEntry('location', 'Location', {
-      header: { label: 'Header', variant: 'default' },
-      footer: { label: 'Footer', variant: 'secondary' },
-      custom: { label: 'Custom', variant: 'warning' }
+    textEntry('name', t('res.menus.field.name')),
+    badgeEntry('location', t('res.menus.field.location'), {
+      header: { label: t('res.menus.loc.header'), variant: 'default' },
+      footer: { label: t('res.menus.loc.footer'), variant: 'secondary' },
+      custom: { label: t('res.menus.loc.custom'), variant: 'warning' }
     }),
-    textEntry('itemCount', 'Items')
+    textEntry('itemCount', t('res.menus.col.items'))
   ]
 })

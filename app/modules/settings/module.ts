@@ -1,7 +1,7 @@
 import SettingResource from './admin/SettingResource'
 
-export default defineModule({
+export default defineModule(t => ({
   name: 'settings',
-  resources: [SettingResource],
-  navGroups: [{ label: 'System', sort: 90 }]
-})
+  resources: [SettingResource(t)],
+  navGroups: [{ label: t('res.ct.group'), sort: 97 }]
+}))

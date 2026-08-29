@@ -1,4 +1,4 @@
-import type { SchemaNode } from '~/admin/core/types'
+import type { Translator, SchemaNode } from '~/admin/core/types'
 import SettingsGroupedPage from './SettingsGroupedPage.vue'
 
 const GROUP_OPTIONS = ['General', 'Blog', 'Email', 'Cache', 'Security', 'Storage', 'Plugin']
@@ -26,10 +26,10 @@ function valueField(type: string, current: unknown): SchemaNode {
   }
 }
 
-export default defineResource({
+export default (t: Translator) => defineResource({
   name: 'settings',
   model: 'Setting',
-  label: 'Setting',
+  label: t('res.settings.label'),
   labelPlural: 'Settings',
   icon: 'settings',
   group: 'System',

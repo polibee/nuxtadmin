@@ -1,27 +1,29 @@
-export default defineResource({
+import type { Translator } from '~/admin/core/types'
+
+export default (t: Translator) => defineResource({
   name: 'roles',
   model: 'Role',
-  label: 'Role',
-  labelPlural: 'Roles',
+  label: t('res.roles.label'),
+  labelPlural: t('res.roles.plural'),
   icon: 'key',
-  group: 'System',
+  group: t('res.roles.group'),
   sort: 91,
   permissionPrefix: 'roles',
   searchable: ['name'],
 
   table: () => [
-    textColumn('name', 'Name', { sortable: true }),
-    textColumn('key', 'Key'),
-    tagsColumn('permissions', 'Permissions'),
+    textColumn('name', t('res.roles.field.name'), { sortable: true }),
+    textColumn('key', t('res.roles.field.key')),
+    tagsColumn('permissions', t('res.roles.col.permissions')),
     actionsColumn([
       defineAction({
         name: 'reload-permissions',
-        label: 'Reload Session',
+        label: t('res.roles.reloadSession'),
         icon: 'activity',
         permission: 'roles.edit',
         confirm: {
-          title: 'Reload the app to apply permission changes?',
-          description: 'Sessions cache permissions at login. Reloading re-syncs the current session.',
+          title: t('res.roles.reloadConfirm'),
+          description: t('res.roles.reloadDesc'),
           confirmLabel: 'Reload'
         },
         handler: async () => {
@@ -32,20 +34,20 @@ export default defineResource({
   ],
 
   form: () => [
-    section('Identity', [
+    section(t('res.roles.section.identity'), [
       grid(2, [
-        textInput('name', 'Name', { required: true, placeholder: 'Moderator' }),
-        textInput('key', 'Key', { placeholder: 'moderator', helpText: 'Immutable role key, e.g. used in user records.' })
+        textInput('name', t('res.roles.field.name'), { required: true, placeholder: 'Moderator' }),
+        textInput('key', t('res.roles.field.key'), { placeholder: 'moderator', helpText: t('res.roles.keyHint') })
       ])
     ]),
-    section('Permissions', [
-      permissionsInput('permissions', 'Granted Permissions')
+    section(t('res.roles.section.permissions'), [
+      permissionsInput('permissions', t('res.roles.granted'))
     ])
   ],
 
   infolist: () => [
-    textEntry('name', 'Name'),
-    textEntry('key', 'Key'),
-    tagsEntry('permissions', 'Permissions')
+    textEntry('name', t('res.roles.field.name')),
+    textEntry('key', t('res.roles.field.key')),
+    tagsEntry('permissions', t('res.roles.col.permissions'))
   ]
 })

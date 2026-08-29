@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { t } = useI18n()
+
 interface RevenuePoint { label: string, revenue: number }
 
 const series = ref<RevenuePoint[]>([])
@@ -20,10 +22,10 @@ const max = computed(() => Math.max(...series.value.map(p => p.revenue), 1))
     <div class="mb-4 flex items-baseline justify-between">
       <div>
         <h3 class="text-sm font-semibold">
-          Weekly Revenue
+          {{ t('widget.weeklyRevenue') }}
         </h3>
         <p class="text-xs text-muted-foreground">
-          Last 10 weeks · refunds excluded
+          {{ t('widget.weeklyHint') }}
         </p>
       </div>
     </div>

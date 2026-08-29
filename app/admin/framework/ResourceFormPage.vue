@@ -143,10 +143,10 @@ function restoreDraft(): void {
     >
       <div>
         <p class="font-medium">
-          Unsaved draft found
+          {{ t('draft.unsavedFound') }}
         </p>
         <p class="mt-0.5 text-xs text-muted-foreground">
-          Autosaved {{ new Date(draft.savedAt).toLocaleString() }}
+          {{ t('draft.autosavedAt', { time: new Date(draft.savedAt).toLocaleString() }) }}
         </p>
       </div>
       <div class="flex gap-2">
@@ -155,13 +155,13 @@ function restoreDraft(): void {
           variant="outline"
           @click="draft = null; discardDraft()"
         >
-          Discard
+          {{ t('draft.discard') }}
         </UiButton>
         <UiButton
           size="sm"
           @click="restoreDraft"
         >
-          Restore draft
+          {{ t('draft.restore') }}
         </UiButton>
       </div>
     </UiAlert>
@@ -184,7 +184,7 @@ function restoreDraft(): void {
             v-if="autosaveAt && mode === 'edit'"
             class="mr-auto text-xs text-muted-foreground"
           >
-            Draft saved {{ new Date(autosaveAt).toLocaleTimeString() }}
+            {{ t('draft.savedAt', { time: new Date(autosaveAt).toLocaleTimeString() }) }}
           </span>
           <UiButton
             type="button"

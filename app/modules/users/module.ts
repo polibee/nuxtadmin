@@ -1,7 +1,7 @@
 import UserResource from './admin/UserResource'
 
-export default defineModule({
+export default defineModule(t => ({
   name: 'users',
-  resources: [UserResource],
-  navGroups: [{ label: 'User Management', sort: 10 }]
-})
+  resources: [UserResource(t)],
+  navGroups: [{ label: t('res.users.group'), sort: 10 }]
+}))

@@ -1,32 +1,34 @@
-export default defineResource({
+import type { Translator } from '~/admin/core/types'
+
+export default (t: Translator) => defineResource({
   name: 'revisions',
   model: 'Revision',
-  label: 'Revision',
-  labelPlural: 'Revisions',
+  label: t('res.revisions.label'),
+  labelPlural: t('res.revisions.plural'),
   icon: 'history',
-  group: 'System',
+  group: t('res.revisions.group'),
   sort: 96,
   permissionPrefix: 'revisions',
   searchable: ['resource', 'key'],
 
   table: () => [
-    textColumn('key', 'Record', { sortable: true }),
-    textColumn('resource', 'Resource'),
-    numberColumn('version', 'Version'),
-    dateColumn('createdAt', 'Saved', { sortable: true }),
+    textColumn('key', t('res.revisions.col.record'), { sortable: true }),
+    textColumn('resource', t('res.revisions.col.resource')),
+    numberColumn('version', t('res.revisions.col.version')),
+    dateColumn('createdAt', t('res.revisions.col.saved'), { sortable: true }),
     actionsColumn([
       defineAction({
         name: 'restore',
-        label: 'Restore',
+        label: t('common.confirm'),
         icon: 'badge-check',
         confirm: {
-          title: 'Restore this revision?',
-          description: 'The current state is snapshotted first, then the selected version is re-applied.',
-          confirmLabel: 'Restore'
+          title: t('res.revisions.restore'),
+          description: t('res.revisions.restoreDesc'),
+          confirmLabel: t('common.confirm')
         },
         handler: async ({ record }) => {
           await $fetch(`/api/admin/revisions/${record!.id}/restore`, { method: 'POST' })
-          notify(`Revision #${record!.version} restored`)
+          notify(t('res.revisions.restored', { version: String(record!.version) }))
           emitAdminEvent(`${record!.resource}:refresh`)
         }
       })
@@ -34,9 +36,9 @@ export default defineResource({
   ],
 
   infolist: () => [
-    textEntry('key', 'Record'),
-    textEntry('resource', 'Resource'),
-    textEntry('version', 'Version'),
-    datetimeEntry('createdAt', 'Saved')
+    textEntry('key', t('res.revisions.col.record')),
+    textEntry('resource', t('res.revisions.col.resource')),
+    textEntry('version', t('res.revisions.col.version')),
+    datetimeEntry('createdAt', t('res.revisions.col.saved'))
   ]
 })

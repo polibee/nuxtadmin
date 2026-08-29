@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { t } = useI18n()
+
 interface RecentOrder {
   id: number
   orderNo: string
@@ -35,12 +37,12 @@ const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' 
   <UiCard class="flex h-full flex-col p-5">
     <div class="mb-3 flex items-baseline justify-between">
       <h3 class="text-sm font-semibold">
-        Recent Orders
+        {{ t('widget.recentOrders') }}
       </h3>
       <NuxtLink
         to="/admin/orders"
         class="text-xs text-muted-foreground hover:text-foreground"
-      >View all →</NuxtLink>
+      >{{ t('widget.viewAll') }}</NuxtLink>
     </div>
 
     <div

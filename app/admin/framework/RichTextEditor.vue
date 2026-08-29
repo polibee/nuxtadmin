@@ -62,6 +62,8 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
+const { t } = useI18n()
+
 const editor = useEditor({
   content: props.modelValue || '',
   editable: !props.disabled,
@@ -165,7 +167,7 @@ function applyPrompt(): void {
 }
 
 const promptTitle = computed(() =>
-  promptKind.value === 'link' ? 'Insert link' : promptKind.value === 'image' ? 'Insert image' : 'Text color'
+  promptKind.value === 'link' ? t('dialog.insertLink') : promptKind.value === 'image' ? t('dialog.insertImage') : t('dialog.textColor')
 )
 
 function insertTable(): void {
@@ -190,51 +192,51 @@ const groups = computed<ToolGroup[]>(() => {
   const chain = () => e.chain().focus()
   return [
     { buttons: [
-      { label: 'Undo', icon: Undo2Icon, disabled: !e.can().undo(), run: () => chain().undo().run() },
-      { label: 'Redo', icon: Redo2Icon, disabled: !e.can().redo(), run: () => chain().redo().run() }
+      { label: t('editor.undo'), icon: Undo2Icon, disabled: !e.can().undo(), run: () => chain().undo().run() },
+      { label: t('editor.redo'), icon: Redo2Icon, disabled: !e.can().redo(), run: () => chain().redo().run() }
     ] },
     { buttons: [
-      { label: 'Bold', icon: BoldIcon, active: e.isActive('bold'), run: () => chain().toggleBold().run() },
-      { label: 'Italic', icon: ItalicIcon, active: e.isActive('italic'), run: () => chain().toggleItalic().run() },
-      { label: 'Underline', icon: UnderlineIcon, active: e.isActive('underline'), run: () => chain().toggleUnderline().run() },
-      { label: 'Strike', icon: StrikethroughIcon, active: e.isActive('strike'), run: () => chain().toggleStrike().run() },
-      { label: 'Inline code', icon: CodeIcon, active: e.isActive('code'), run: () => chain().toggleCode().run() },
-      { label: 'Superscript', icon: SuperscriptIcon, active: e.isActive('superscript'), run: () => chain().toggleSuperscript().run() },
-      { label: 'Subscript', icon: SubscriptIcon, active: e.isActive('subscript'), run: () => chain().toggleSubscript().run() }
+      { label: t('editor.bold'), icon: BoldIcon, active: e.isActive('bold'), run: () => chain().toggleBold().run() },
+      { label: t('editor.italic'), icon: ItalicIcon, active: e.isActive('italic'), run: () => chain().toggleItalic().run() },
+      { label: t('editor.underline'), icon: UnderlineIcon, active: e.isActive('underline'), run: () => chain().toggleUnderline().run() },
+      { label: t('editor.strike'), icon: StrikethroughIcon, active: e.isActive('strike'), run: () => chain().toggleStrike().run() },
+      { label: t('editor.code'), icon: CodeIcon, active: e.isActive('code'), run: () => chain().toggleCode().run() },
+      { label: t('editor.superscript'), icon: SuperscriptIcon, active: e.isActive('superscript'), run: () => chain().toggleSuperscript().run() },
+      { label: t('editor.subscript'), icon: SubscriptIcon, active: e.isActive('subscript'), run: () => chain().toggleSubscript().run() }
     ] },
     { buttons: [
-      { label: 'Heading 2', icon: Heading2Icon, active: e.isActive('heading', { level: 2 }), run: () => chain().toggleHeading({ level: 2 }).run() },
-      { label: 'Heading 3', icon: Heading3Icon, active: e.isActive('heading', { level: 3 }), run: () => chain().toggleHeading({ level: 3 }).run() }
+      { label: t('editor.h2'), icon: Heading2Icon, active: e.isActive('heading', { level: 2 }), run: () => chain().toggleHeading({ level: 2 }).run() },
+      { label: t('editor.h3'), icon: Heading3Icon, active: e.isActive('heading', { level: 3 }), run: () => chain().toggleHeading({ level: 3 }).run() }
     ] },
     { buttons: [
-      { label: 'Bullet list', icon: ListIcon, active: e.isActive('bulletList'), run: () => chain().toggleBulletList().run() },
-      { label: 'Ordered list', icon: ListOrderedIcon, active: e.isActive('orderedList'), run: () => chain().toggleOrderedList().run() },
-      { label: 'Task list', icon: ListTodoIcon, active: e.isActive('taskList'), run: () => chain().toggleTaskList().run() },
-      { label: 'Quote', icon: QuoteIcon, active: e.isActive('blockquote'), run: () => chain().toggleBlockquote().run() },
-      { label: 'Code block', icon: BracesIcon, active: e.isActive('codeBlock'), run: () => chain().toggleCodeBlock().run() }
+      { label: t('editor.bulletList'), icon: ListIcon, active: e.isActive('bulletList'), run: () => chain().toggleBulletList().run() },
+      { label: t('editor.orderedList'), icon: ListOrderedIcon, active: e.isActive('orderedList'), run: () => chain().toggleOrderedList().run() },
+      { label: t('editor.taskList'), icon: ListTodoIcon, active: e.isActive('taskList'), run: () => chain().toggleTaskList().run() },
+      { label: t('editor.quote'), icon: QuoteIcon, active: e.isActive('blockquote'), run: () => chain().toggleBlockquote().run() },
+      { label: t('editor.codeBlock'), icon: BracesIcon, active: e.isActive('codeBlock'), run: () => chain().toggleCodeBlock().run() }
     ] },
     { buttons: [
-      { label: 'Align left', icon: AlignLeftIcon, active: e.isActive({ textAlign: 'left' }), run: () => chain().setTextAlign('left').run() },
-      { label: 'Align center', icon: AlignCenterIcon, active: e.isActive({ textAlign: 'center' }), run: () => chain().setTextAlign('center').run() },
-      { label: 'Align right', icon: AlignRightIcon, active: e.isActive({ textAlign: 'right' }), run: () => chain().setTextAlign('right').run() },
-      { label: 'Justify', icon: AlignJustifyIcon, active: e.isActive({ textAlign: 'justify' }), run: () => chain().setTextAlign('justify').run() }
+      { label: t('editor.alignLeft'), icon: AlignLeftIcon, active: e.isActive({ textAlign: 'left' }), run: () => chain().setTextAlign('left').run() },
+      { label: t('editor.alignCenter'), icon: AlignCenterIcon, active: e.isActive({ textAlign: 'center' }), run: () => chain().setTextAlign('center').run() },
+      { label: t('editor.alignRight'), icon: AlignRightIcon, active: e.isActive({ textAlign: 'right' }), run: () => chain().setTextAlign('right').run() },
+      { label: t('editor.justify'), icon: AlignJustifyIcon, active: e.isActive({ textAlign: 'justify' }), run: () => chain().setTextAlign('justify').run() }
     ] },
     { buttons: [
-      { label: 'Highlight', icon: HighlighterIcon, active: e.isActive('highlight'), run: () => chain().toggleHighlight().run() },
-      { label: 'Text color', icon: PaletteIcon, run: openColor }
+      { label: t('editor.highlight'), icon: HighlighterIcon, active: e.isActive('highlight'), run: () => chain().toggleHighlight().run() },
+      { label: t('editor.color'), icon: PaletteIcon, run: openColor }
     ] },
     { buttons: [
-      { label: 'Link', icon: Link2Icon, active: e.isActive('link'), run: openLink },
-      { label: 'Image', icon: ImagePlusIcon, run: openImage },
-      { label: 'Divider', icon: MinusIcon, run: () => chain().setHorizontalRule().run() }
+      { label: t('editor.link'), icon: Link2Icon, active: e.isActive('link'), run: openLink },
+      { label: t('editor.image'), icon: ImagePlusIcon, run: openImage },
+      { label: t('editor.divider'), icon: MinusIcon, run: () => chain().setHorizontalRule().run() }
     ] },
     { buttons: [
-      { label: 'Insert table', icon: TableIcon, active: e.isActive('table'), run: insertTable },
-      { label: 'Add row', icon: TableIcon, disabled: !e.isActive('table'), run: () => chain().addRowAfter().run() },
-      { label: 'Add column', icon: TableIcon, disabled: !e.isActive('table'), run: () => chain().addColumnAfter().run() },
-      { label: 'Delete row', icon: SquareSlashIcon, disabled: !e.isActive('table'), run: () => chain().deleteRow().run() },
-      { label: 'Delete column', icon: SquareSlashIcon, disabled: !e.isActive('table'), run: () => chain().deleteColumn().run() },
-      { label: 'Delete table', icon: SquareSlashIcon, disabled: !e.isActive('table'), run: () => chain().deleteTable().run() }
+      { label: t('editor.table'), icon: TableIcon, active: e.isActive('table'), run: insertTable },
+      { label: t('editor.addRow'), icon: TableIcon, disabled: !e.isActive('table'), run: () => chain().addRowAfter().run() },
+      { label: t('editor.addColumn'), icon: TableIcon, disabled: !e.isActive('table'), run: () => chain().addColumnAfter().run() },
+      { label: t('editor.deleteRow'), icon: SquareSlashIcon, disabled: !e.isActive('table'), run: () => chain().deleteRow().run() },
+      { label: t('editor.deleteColumn'), icon: SquareSlashIcon, disabled: !e.isActive('table'), run: () => chain().deleteColumn().run() },
+      { label: t('editor.deleteTable'), icon: SquareSlashIcon, disabled: !e.isActive('table'), run: () => chain().deleteTable().run() }
     ] }
   ]
 })
@@ -271,7 +273,7 @@ const groups = computed<ToolGroup[]>(() => {
           />
         </button>
       </div>
-      <span class="ml-auto shrink-0 pr-1 text-[10px] tabular-nums text-muted-foreground">{{ charCount }} chars</span>
+      <span class="ml-auto shrink-0 pr-1 text-[10px] tabular-nums text-muted-foreground">{{ t('editor.chars', { n: charCount }) }}</span>
     </div>
     <EditorContent
       :editor="editor"
@@ -304,13 +306,13 @@ const groups = computed<ToolGroup[]>(() => {
               <UiInput
                 id="editor-prompt-url"
                 v-model="promptUrl"
-                placeholder="https://…"
+                :placeholder="t('dialog.urlPlaceholder')"
               />
               <p
                 v-if="promptUrl && !promptValid"
                 class="text-xs text-destructive"
               >
-                Must start with http:// or https://
+                $t('dialog.urlInvalid')
               </p>
             </div>
 
@@ -324,7 +326,7 @@ const groups = computed<ToolGroup[]>(() => {
               <UiInput
                 id="editor-prompt-alt"
                 v-model="promptAlt"
-                placeholder="Describe the image"
+                :placeholder="t('dialog.altPlaceholder')"
               />
             </div>
 
@@ -363,14 +365,14 @@ const groups = computed<ToolGroup[]>(() => {
                 size="sm"
                 @click="promptOpen = false"
               >
-                Cancel
+                {{ t('common.cancel') }}
               </UiButton>
               <UiButton
                 type="submit"
                 size="sm"
                 :disabled="!promptValid"
               >
-                Apply
+                {{ t('dialog.apply') }}
               </UiButton>
             </div>
           </form>
