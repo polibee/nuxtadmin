@@ -35,6 +35,20 @@ export default defineResource({
           notify('Post published')
           emitAdminEvent('posts:refresh')
         }
+      }),
+      defineAction({
+        name: 'preview',
+        label: 'Preview',
+        icon: 'eye',
+        permission: 'posts.edit',
+        visible: record => record.status !== 'published',
+        handler: async ({ record }) => {
+          const res = await $fetch<{ url: string }>('/api/admin/preview', {
+            method: 'POST',
+            body: { resource: 'posts', id: record!.id }
+          })
+          if (import.meta.client) window.open(res.url, '_blank', 'noopener')
+        }
       })
     ])
   ],

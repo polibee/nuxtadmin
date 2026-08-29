@@ -260,6 +260,12 @@ function dynamicConfig(name: string): ServerResourceConfig | undefined {
   if (!fields.publishedAt) fields.publishedAt = { type: 'string' }
   if (!fields.scheduledAt) fields.scheduledAt = { type: 'string' }
 
+  // SEO meta fields (consume by sitemap/preview; theme reads them too)
+  if (!fields.seoTitle) fields.seoTitle = { type: 'string' }
+  if (!fields.seoDescription) fields.seoDescription = { type: 'string' }
+  if (!fields.canonical) fields.canonical = { type: 'string' }
+  if (!fields.robots) fields.robots = { type: 'string', enum: ['index', 'noindex'] }
+
   return { label: type.name, searchable, fields, permissionPrefix: 'content' }
 }
 

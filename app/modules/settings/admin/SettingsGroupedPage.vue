@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
-import type { SchemaNode } from '~/admin/core/types'
 import type { Paginated } from '#shared/types/api'
 import SettingsGroupForm, { type SettingItem } from './SettingsGroupForm.vue'
 
@@ -56,39 +55,68 @@ const addOpen = ref(false)
 const addGroup = ref('General')
 const { t } = useI18n()
 
-const addSchema = computed<SchemaNode[]>(() => [
-  section('New Setting', [
-    grid(2, [
-      textInput('key', 'Key', { required: true, placeholder: 'SITE_NAME' }),
-      textInput('group', 'Group', { required: true, defaultValue: addGroup.value }),
-      selectInput('type', 'Type', [
-        { label: 'String', value: 'string' },
-        { label: 'Text', value: 'text' },
-        { label: 'Number', value: 'number' },
-        { label: 'Boolean', value: 'boolean' },
-        { label: 'Secret', value: 'secret' }
-      ], { defaultValue: 'string' }),
-      switchInput('public', 'Public', { defaultValue: false }),
-      textInput('value', 'Value', { colSpan: 2 }),
-      textarea('description', 'Description', { rows: 2, colSpan: 2 })
-    ])
-  ])
-])
+/* ---- smart add-setting form: human label in, key/type inferred ---- */
 
-const { setValues: addSetValues, submit: addSubmit, submitting: addSubmitting } = useFormSchema({
-  schema: () => addSchema.value,
-  initialValues: { group: 'General', type: 'string', public: false },
-  onSubmit: async (values) => {
-    await $fetch('/api/admin/settings', { method: 'POST', body: values })
-    notify(`${values.key} created`)
-    addOpen.value = false
-    version.value++
-  }
+const newLabel = ref('')
+const newValueRaw = ref('')
+const newPublic = ref(true)
+const newDescription = ref('')
+
+function toKey(label: string): string {
+  return label.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+}
+
+const newKey = computed(() => toKey(newLabel.value))
+
+const keyTaken = computed(() =>
+  settings.value.some(s => s.key === newKey.value)
+)
+
+const detectedType = computed<'boolean' | 'number' | 'string'>(() => {
+  const raw = newValueRaw.value.trim()
+  if (raw === 'true' || raw === 'false') return 'boolean'
+  if (raw !== '' && !Number.isNaN(Number(raw))) return 'number'
+  return 'string'
 })
+
+const parsedValue = computed<string | number | boolean>(() => {
+  if (detectedType.value === 'boolean') return newValueRaw.value.trim() === 'true'
+  if (detectedType.value === 'number') return Number(newValueRaw.value)
+  return newValueRaw.value
+})
+
+const addValid = computed(() =>
+  newLabel.value.trim().length > 0 && newKey.value.length > 0 && !keyTaken.value
+)
+
+async function submitAdd(): Promise<void> {
+  if (!addValid.value) return
+  await $fetch('/api/admin/settings', {
+    method: 'POST',
+    body: {
+      key: newKey.value,
+      value: parsedValue.value,
+      type: detectedType.value,
+      group: addGroup.value,
+      public: newPublic.value,
+      description: newDescription.value.trim() || undefined
+    }
+  })
+  notify(`${newKey.value} created`)
+  addOpen.value = false
+  newLabel.value = ''
+  newValueRaw.value = ''
+  newPublic.value = true
+  newDescription.value = ''
+  version.value++
+}
 
 function openAdd(group: string): void {
   addGroup.value = group
-  addSetValues({ group, type: 'string', public: false, key: '', value: '', description: '' })
+  newLabel.value = ''
+  newValueRaw.value = ''
+  newPublic.value = true
+  newDescription.value = ''
   addOpen.value = true
 }
 </script>
@@ -146,7 +174,7 @@ function openAdd(group: string): void {
       </UiButton>
     </UiEmpty>
 
-    <!-- add setting dialog -->
+    <!-- smart add-setting dialog -->
     <DialogRoot
       :open="addOpen"
       @update:open="v => (addOpen = v)"
@@ -155,32 +183,118 @@ function openAdd(group: string): void {
         <DialogOverlay class="fixed inset-0 z-50 bg-black/60" />
         <DialogContent class="fixed left-1/2 top-1/2 z-50 max-h-[85vh] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border bg-card p-6 shadow-lg focus:outline-none">
           <DialogTitle class="text-base font-semibold">
-            {{ t('common.new') }} · {{ addGroup }}
+            New setting · {{ addGroup }}
           </DialogTitle>
-          <div class="mt-4">
-            <form
-              class="space-y-6"
-              @submit.prevent="addSubmit"
-            >
-              <FormSchemaRenderer :schema="addSchema" />
-              <div class="flex justify-end gap-2">
-                <UiButton
-                  type="button"
-                  variant="outline"
-                  :disabled="addSubmitting"
-                  @click="addOpen = false"
-                >
-                  {{ t('common.cancel') }}
-                </UiButton>
-                <UiButton
-                  type="submit"
-                  :disabled="addSubmitting"
-                >
-                  {{ addSubmitting ? t('common.saving') : t('common.save') }}
-                </UiButton>
+
+          <form
+            class="mt-5 space-y-5"
+            @submit.prevent="submitAdd"
+          >
+            <!-- name -> auto key -->
+            <div class="space-y-1.5">
+              <UiLabel for="new-label">
+                Name
+              </UiLabel>
+              <UiInput
+                id="new-label"
+                v-model="newLabel"
+                placeholder="Site Name"
+              />
+              <div class="flex items-center gap-2 text-xs">
+                <template v-if="newKey">
+                  <span class="text-muted-foreground">Stored as</span>
+                  <code class="rounded bg-muted px-1.5 py-0.5 font-semibold">{{ newKey }}</code>
+                  <span
+                    v-if="keyTaken"
+                    class="text-destructive"
+                  >already exists</span>
+                </template>
               </div>
-            </form>
-          </div>
+            </div>
+
+            <!-- smart value -->
+            <div class="space-y-1.5">
+              <UiLabel for="new-value">
+                Value
+              </UiLabel>
+              <UiInput
+                id="new-value"
+                v-model="newValueRaw"
+                placeholder="e.g. My Site · 24 · true"
+              />
+              <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>Detected type</span>
+                <UiBadge
+                  variant="secondary"
+                  class="capitalize"
+                >
+                  {{ detectedType }}
+                </UiBadge>
+              </div>
+            </div>
+
+            <!-- visibility -->
+            <div class="space-y-1.5">
+              <UiLabel>Visibility</UiLabel>
+              <div class="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  class="rounded-lg border p-3 text-left transition-colors"
+                  :class="newPublic ? 'border-primary bg-primary/5' : 'hover:bg-accent/40'"
+                  @click="newPublic = true"
+                >
+                  <p class="text-sm font-medium">
+                    Public
+                  </p>
+                  <p class="mt-0.5 text-xs text-muted-foreground">
+                    Exposed at /api/public-settings
+                  </p>
+                </button>
+                <button
+                  type="button"
+                  class="rounded-lg border p-3 text-left transition-colors"
+                  :class="!newPublic ? 'border-primary bg-primary/5' : 'hover:bg-accent/40'"
+                  @click="newPublic = false"
+                >
+                  <p class="text-sm font-medium">
+                    Private
+                  </p>
+                  <p class="mt-0.5 text-xs text-muted-foreground">
+                    Admin only · never exposed
+                  </p>
+                </button>
+              </div>
+            </div>
+
+            <!-- description -->
+            <div class="space-y-1.5">
+              <UiLabel for="new-desc">
+                Description <span class="text-muted-foreground">(optional)</span>
+              </UiLabel>
+              <UiTextarea
+                id="new-desc"
+                v-model="newDescription"
+                :rows="2"
+                placeholder="What is this setting used for?"
+              />
+            </div>
+
+            <div class="flex justify-end gap-2 border-t pt-4">
+              <UiButton
+                type="button"
+                variant="outline"
+                @click="addOpen = false"
+              >
+                {{ t('common.cancel') }}
+              </UiButton>
+              <UiButton
+                type="submit"
+                :disabled="!addValid"
+              >
+                {{ t('common.save') }}
+              </UiButton>
+            </div>
+          </form>
         </DialogContent>
       </DialogPortal>
     </DialogRoot>

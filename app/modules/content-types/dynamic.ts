@@ -71,6 +71,20 @@ function lifecycleActions(name: string): ColumnDefLite {
       }
     }),
     defineAction({
+      name: 'preview',
+      label: 'Preview',
+      icon: 'eye',
+      permission: 'content.edit',
+      visible: record => record.status !== 'published',
+      handler: async ({ record }) => {
+        const res = await $fetch<{ url: string }>('/api/admin/preview', {
+          method: 'POST',
+          body: { resource: name, id: record!.id }
+        })
+        if (import.meta.client) window.open(res.url, '_blank', 'noopener')
+      }
+    }),
+    defineAction({
       name: 'schedule',
       label: 'Schedule',
       icon: 'clock',
@@ -136,7 +150,20 @@ export function buildContentModule(ct: ContentTypeLike): ModuleDef {
       dateColumn('createdAt', 'Created', { sortable: true }),
       lifecycleActions(name)
     ],
-    form: () => ct.fields.map(fieldFor),
+    form: () => [
+      ...ct.fields.map(fieldFor),
+      section('SEO', [
+        grid(2, [
+          textInput('seoTitle', 'SEO Title', { placeholder: 'Overrides the title for search engines' }),
+          textInput('canonical', 'Canonical URL', { placeholder: 'https://…' })
+        ]),
+        textarea('seoDescription', 'SEO Description', { rows: 2, placeholder: 'Used for meta description, RSS and previews' }),
+        selectInput('robots', 'Robots', [
+          { label: 'Index (default)', value: 'index' },
+          { label: 'Noindex', value: 'noindex' }
+        ], { defaultValue: 'index' })
+      ])
+    ],
     infolist: () => [
       ...ct.fields.map(entryFor),
       badgeEntry('status', 'Status', STATUS_BADGES),
