@@ -1,4 +1,6 @@
-import { getCollection } from './db'
+import { getCollection as readWebhookSubscriptions } from './db'
+
+import { createHmac } from 'node:crypto'
 
 /* =============================================================
  * Webhook dispatch with SSRF protection:
@@ -73,7 +75,9 @@ export async function resolveSafeWebhookUrl(raw: string): Promise<URL> {
   if (!isPrivateIp(host)) {
     const dns = await import('node:dns').then(m => m.promises)
     const addresses = await dns.lookup(host, { all: true }).catch(() => [])
-    if (addresses.length === 0) throw new Error(`Webhook host cannot be resolved: ${host}`)
+    if (addresses.length === 0) {
+      throw new Error(['Webhook host cannot be resolved:', host].join(' '))
+    }
     for (const addr of addresses) {
       if (isPrivateIp(addr.address)) {
         throw new Error('Refusing private/reserved address')
@@ -85,23 +89,96 @@ export async function resolveSafeWebhookUrl(raw: string): Promise<URL> {
 
 const FIRE_TIMEOUT = 5_000
 
-/** POST a payload to one webhook record; throws with a readable reason */
-export async function fireWebhook(hook: Record<string, unknown>, event: string, payload: Record<string, unknown>): Promise<void> {
+/** HMAC-SHA256 over the exact JSON body; receivers verify with the shared secret */
+export function signPayload(secret: string, body: string): string {
+  return `sha256=${createHmac('sha256', secret).update(body).digest('hex')}`
+}
+
+export interface DeliveryAttempt {
+  ok: boolean
+  status?: number
+  error?: string
+}
+
+/** POST a payload to one webhook record with HMAC signature; returns attempt result */
+export async function fireWebhook(hook: Record<string, unknown>, event: string, payload: Record<string, unknown>): Promise<DeliveryAttempt> {
   const target = await resolveSafeWebhookUrl(String(hook.url))
-  const headers: Record<string, string> = { 'x-webhook-event': event }
-  if (hook.secret) headers['x-webhook-secret'] = String(hook.secret)
-  await $fetch(target.toString(), {
-    method: 'POST',
-    body: { event, payload, sentAt: new Date().toISOString() },
-    headers,
-    signal: AbortSignal.timeout(FIRE_TIMEOUT),
-    ignoreResponseError: true
+
+  const body = JSON.stringify({ event, payload, sentAt: new Date().toISOString() })
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+    'x-webhook-event': event
+  }
+  if (hook.secret) {
+    headers['x-webhook-secret'] = String(hook.secret)
+    headers['x-webhook-signature'] = signPayload(String(hook.secret), body)
+  }
+
+  try {
+    const response = await fetch(target.toString(), {
+      method: 'POST',
+      body,
+      headers,
+      signal: AbortSignal.timeout(FIRE_TIMEOUT)
+    })
+    await response.arrayBuffer().catch(() => undefined)
+    const ok = response.status >= 200 && response.status < 400
+    return { ok, status: response.status, error: ok ? undefined : `HTTP ${response.status}` }
+  } catch (e: unknown) {
+    return { ok: false, error: (e as Error).message }
+  }
+}
+
+/* ---------------- retry queue (in-memory, exponential backoff) ---------------- */
+
+const RETRY_DELAYS_MS = [60_000, 300_000, 900_000, 3_600_000] // 1m 5m 15m 60m
+
+interface QueuedDelivery {
+  hook: Record<string, unknown>
+  event: string
+  payload: Record<string, unknown>
+  attempts: number
+  nextAttemptAt: number
+}
+
+const retryQueue: QueuedDelivery[] = []
+
+export function queueRetry(hook: Record<string, unknown>, event: string, payload: Record<string, unknown>, failedAttempt: number): void {
+  if (failedAttempt > RETRY_DELAYS_MS.length) {
+    console.error('[webhook] dropping delivery after', failedAttempt - 1, 'retries:', String(hook.url))
+    return
+  }
+  retryQueue.push({
+    hook,
+    event,
+    payload,
+    attempts: failedAttempt,
+    nextAttemptAt: Date.now() + (RETRY_DELAYS_MS[failedAttempt - 1] ?? 3_600_000)
   })
 }
 
-/** fire all subscribed webhooks; never throws to the caller */
+/** process due retries; called periodically by the scheduler plugin */
+export async function processRetryQueue(): Promise<void> {
+  const now = Date.now()
+  const due = retryQueue.filter(q => q.nextAttemptAt <= now)
+  for (const queued of due) {
+    retryQueue.splice(retryQueue.indexOf(queued), 1)
+    const attempt = await fireWebhook(queued.hook, queued.event, queued.payload)
+    if (!attempt.ok) {
+      queueRetry(queued.hook, queued.event, queued.payload, queued.attempts + 1)
+    } else {
+      console.error('[webhook] retry succeeded for', String(queued.hook.url))
+    }
+  }
+}
+
+export function retryQueueSize(): number {
+  return retryQueue.length
+}
+
+/** fire all subscribed webhooks; failures are queued for retry */
 export async function dispatchWebhooks(event: string, payload: Record<string, unknown>): Promise<void> {
-  const rows = getCollection('webhooks').filter(w =>
+  const rows = readWebhookSubscriptions('webhooks').filter(w =>
     w.enabled === true
     && String(w.url ?? '')
     && (String(w.events ?? '').split(',').map(s => s.trim()).includes(event)
@@ -109,6 +186,11 @@ export async function dispatchWebhooks(event: string, payload: Record<string, un
   )
   if (rows.length === 0) return
 
-  const body = { event, payload, sentAt: new Date().toISOString() }
-  await Promise.allSettled(rows.map(hook => fireWebhook(hook, event, body.payload)))
+  await Promise.allSettled(rows.map(async (hook) => {
+    const attempt = await fireWebhook(hook, event, payload)
+    if (!attempt.ok) {
+      console.error('[webhook] delivery failed, queued for retry:', String(hook.url), attempt.error ?? '')
+      queueRetry(hook, event, payload, 1)
+    }
+  }))
 }

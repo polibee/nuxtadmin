@@ -44,7 +44,8 @@ export default defineResource({
           { label: 'Number', value: 'number' },
           { label: 'Boolean', value: 'boolean' },
           { label: 'Select', value: 'select' },
-          { label: 'Date', value: 'date' }
+          { label: 'Date', value: 'date' },
+          { label: 'Rich Text', value: 'richtext' }
         ], { defaultValue: 'string' }),
         textInput('options', 'Options (csv, select only)', { placeholder: 'foo,bar,baz' }),
         switchInput('required', 'Required')

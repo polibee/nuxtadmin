@@ -23,6 +23,7 @@ export type FieldType
     | 'file'
     | 'repeater'
     | 'permissions'
+    | 'richtext'
 
 export interface FieldOption {
   label: string

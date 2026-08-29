@@ -167,6 +167,13 @@ function togglePerm(key: string): void {
       @update:model-value="value = $event"
     />
 
+    <!-- tiptap rich text -->
+    <RichTextEditor
+      v-else-if="node.kind === 'richtext'"
+      v-model="stringValue"
+      :disabled="node.disabled"
+    />
+
     <!-- file upload -->
     <template v-else-if="node.kind === 'file'">
       <label

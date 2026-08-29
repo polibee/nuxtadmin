@@ -65,7 +65,7 @@ export default defineResource({
         placeholder: 'getting-started-with-nuxt',
         colSpan: 2
       }),
-      textarea('content', 'Content', { rows: 6, colSpan: 2 })
+      richTextInput('content', 'Content', { colSpan: 2 })
     ]),
     section('Metadata', [
       grid(3, [

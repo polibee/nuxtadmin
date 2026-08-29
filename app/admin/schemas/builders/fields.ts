@@ -90,3 +90,8 @@ export function repeaterInput(
 export function permissionsInput(name: string, label: string, opts?: FieldOptions): FieldNode {
   return make('permissions', name, label, opts)
 }
+
+/** tiptap rich text editor (stores HTML) */
+export function richTextInput(name: string, label: string, opts?: FieldOptions): FieldNode {
+  return make('richtext', name, label, opts)
+}

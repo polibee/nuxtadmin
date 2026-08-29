@@ -244,6 +244,10 @@ function dynamicConfig(name: string): ServerResourceConfig | undefined {
           enum: (field.options ?? '').split(',').map(s => s.trim()).filter(Boolean)
         }
         break
+      case 'richtext':
+        // rich text stored as HTML string; excluded from search
+        fields[field.name] = { type: 'string', required: field.required }
+        break
       default:
         fields[field.name] = { type: 'string', required: field.required }
         searchable.push(field.name)

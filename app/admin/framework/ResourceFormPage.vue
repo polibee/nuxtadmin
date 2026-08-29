@@ -39,12 +39,37 @@ const { form, submit, submitting } = useFormSchema({
       })
       notify(t('toast.updated', { label: props.resource.label }))
     }
+    await discardDraft()
     await navigateTo(basePath.value)
   }
 })
 
 /* edit mode: hydrate the form once the record arrives */
 const loading = ref(props.mode === 'edit')
+
+/* ---------------- autosave (edit mode only) ---------------- */
+
+interface DraftEntry {
+  values: Record<string, unknown>
+  savedAt: string
+}
+
+const draft = ref<DraftEntry | null>(null)
+const autosaveAt = ref('')
+const allow = useCan()
+const canAutosave = computed(() =>
+  props.mode === 'edit' && allow(`${props.resource.permissionPrefix}.edit`)
+)
+
+let autosaveTimer: ReturnType<typeof setTimeout> | null = null
+let suppressAutosave = true
+
+async function discardDraft(): Promise<void> {
+  draft.value = null
+  await $fetch('/api/admin/autosave', {
+    query: { resource: props.resource.name, id: props.id, discard: 1 }
+  }).catch(() => undefined)
+}
 
 onMounted(async () => {
   if (props.mode !== 'edit' || !props.id) return
@@ -53,10 +78,46 @@ onMounted(async () => {
     form.setValues(record as never)
   } catch (e: unknown) {
     notifyError(t('toast.loadFailed', { label: props.resource.label }), (e as Error).message)
-  } finally {
-    loading.value = false
   }
+
+  try {
+    const res = await $fetch<{ draft: DraftEntry | null }>('/api/admin/autosave', {
+      query: { resource: props.resource.name, id: props.id }
+    })
+    draft.value = res.draft
+  } catch {
+    draft.value = null
+  }
+
+  suppressAutosave = false
+  loading.value = false
 })
+
+watch(() => ({ ...form.values }), (values) => {
+  if (!canAutosave.value || suppressAutosave || submitting.value) return
+  if (autosaveTimer) clearTimeout(autosaveTimer)
+  autosaveTimer = setTimeout(async () => {
+    try {
+      const res = await $fetch<{ savedAt: string }>('/api/admin/autosave', {
+        method: 'POST',
+        body: { resource: props.resource.name, id: props.id, values }
+      })
+      autosaveAt.value = res.savedAt
+    } catch {
+      autosaveAt.value = ''
+    }
+  }, 1500)
+}, { deep: true })
+
+function restoreDraft(): void {
+  if (!draft.value) return
+  suppressAutosave = true
+  form.setValues(draft.value.values as never)
+  draft.value = null
+  nextTick(() => {
+    suppressAutosave = false
+  })
+}
 </script>
 
 <template>
@@ -75,6 +136,36 @@ onMounted(async () => {
       </div>
     </div>
 
+    <UiAlert
+      v-if="draft"
+      variant="info"
+      class="flex flex-wrap items-center justify-between gap-3"
+    >
+      <div>
+        <p class="font-medium">
+          Unsaved draft found
+        </p>
+        <p class="mt-0.5 text-xs text-muted-foreground">
+          Autosaved {{ new Date(draft.savedAt).toLocaleString() }}
+        </p>
+      </div>
+      <div class="flex gap-2">
+        <UiButton
+          size="sm"
+          variant="outline"
+          @click="draft = null; discardDraft()"
+        >
+          Discard
+        </UiButton>
+        <UiButton
+          size="sm"
+          @click="restoreDraft"
+        >
+          Restore draft
+        </UiButton>
+      </div>
+    </UiAlert>
+
     <UiCard class="p-6">
       <div
         v-if="loading"
@@ -89,6 +180,12 @@ onMounted(async () => {
       >
         <FormSchemaRenderer :schema="schema" />
         <div class="flex items-center justify-end gap-2 border-t pt-6">
+          <span
+            v-if="autosaveAt && mode === 'edit'"
+            class="mr-auto text-xs text-muted-foreground"
+          >
+            Draft saved {{ new Date(autosaveAt).toLocaleTimeString() }}
+          </span>
           <UiButton
             type="button"
             variant="outline"

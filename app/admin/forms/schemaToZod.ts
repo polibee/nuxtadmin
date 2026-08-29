@@ -7,7 +7,7 @@ import type { FieldNode, SchemaNode } from '../core/types'
  * ============================================================= */
 
 /** kinds whose base rule is a plain z.string(), safe for .min() */
-const STRING_BASE_KINDS: FieldNode['kind'][] = ['text', 'password', 'textarea', 'date']
+const STRING_BASE_KINDS: FieldNode['kind'][] = ['text', 'password', 'textarea', 'date', 'richtext']
 
 function baseRuleFor(node: FieldNode): ZodTypeAny {
   switch (node.kind) {

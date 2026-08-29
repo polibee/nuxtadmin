@@ -3,7 +3,7 @@ import type { ColumnDefLite, EntryNode, ModuleDef, SchemaNode } from '~/admin/co
 interface ContentTypeField {
   name: string
   label: string
-  type: 'string' | 'number' | 'boolean' | 'select' | 'date'
+  type: 'string' | 'number' | 'boolean' | 'select' | 'date' | 'richtext'
   required?: boolean
   options?: string
 }
@@ -33,6 +33,7 @@ function fieldFor(f: ContentTypeField): SchemaNode {
       return selectInput(f.name, f.label,
         (f.options ?? '').split(',').map(s => s.trim()).filter(Boolean).map(v => ({ label: v, value: v })),
         { required: f.required })
+    case 'richtext': return richTextInput(f.name, f.label, opts)
     default: return textInput(f.name, f.label, opts)
   }
 }
@@ -41,6 +42,7 @@ function entryFor(f: ContentTypeField): EntryNode {
   switch (f.type) {
     case 'boolean': return booleanEntry(f.name, f.label)
     case 'date': return dateEntry(f.name, f.label)
+    case 'richtext': return textEntry(f.name, f.label)
     default: return textEntry(f.name, f.label)
   }
 }

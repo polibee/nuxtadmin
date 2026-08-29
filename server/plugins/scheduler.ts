@@ -1,10 +1,12 @@
 import { getCollection, listCollectionNames } from '../utils/db'
 import { emitCmsEvent } from '../utils/events'
+import { processRetryQueue } from '../utils/webhook'
 
 /**
- * Lazy scheduler: promotes scheduled dynamic content to published.
- * Runs every 15s - sufficient for demo scale; swap with a queue/cron
- * (e.g. Nitro scheduled tasks or a worker) for production.
+ * Lazy scheduler: promotes scheduled dynamic content to published and
+ * drains the webhook retry queue. Runs every 15s - sufficient for demo
+ * scale; swap with a queue/cron (e.g. Nitro scheduled tasks or a worker)
+ * for production.
  */
 export default defineNitroPlugin(() => {
   const tick = async (): Promise<void> => {
@@ -24,6 +26,8 @@ export default defineNitroPlugin(() => {
           }
         }
       }
+
+      await processRetryQueue()
     } catch {
       // scheduler must never crash the server
     }
