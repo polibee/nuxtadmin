@@ -27,6 +27,8 @@ Not a template — a framework: declare resources, and full CRUD panels are gene
 - **Autosave** — debounced per-user drafts with restore banner
 - **Mail** — SMTP / Aliyun DirectMail / Resend drivers with test sending
 - **Database & cache** — PostgreSQL / MySQL / Supabase persistence adapters + Redis (sessions/tokens/drafts), fully parameterized SQL, config panel with connection testing
+- **Page cache & monitoring** — public-endpoint response caching with event-driven
+  invalidation, hit-rate charts and one-click purge
 - **i18n** — zh-CN / English, zero mixed-language UI
 
 ## Tech Stack

@@ -1,4 +1,5 @@
 import { getCollection, listCollectionNames } from '../utils/db'
+import { withPageCache } from '../utils/pageCache'
 import { buildUrlSet, type SitemapUrl } from '../utils/xml'
 
 /**
@@ -6,7 +7,7 @@ import { buildUrlSet, type SitemapUrl } from '../utils/xml'
  * content entries (robots=noindex excluded). URL schemes for ct_*
  * collections are placeholders until the theme layer defines them.
  */
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   const settings = getCollection('settings')
   const siteUrl = String(settings.find(s => s.key === 'SITE_URL')?.value ?? '')
   const origin = siteUrl || getRequestURL(event).origin
@@ -37,6 +38,8 @@ export default defineEventHandler((event) => {
     }
   }
 
+  const { body } = await withPageCache('sitemap', async () => buildUrlSet(origin, urls))
   setResponseHeader(event, 'Content-Type', 'application/xml; charset=utf-8')
-  return buildUrlSet(origin, urls)
+  setResponseHeader(event, 'Cache-Control', 'public, max-age=60')
+  return body
 })

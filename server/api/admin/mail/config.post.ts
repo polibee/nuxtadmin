@@ -2,6 +2,7 @@ import type { MailProvider } from '../../../utils/mail'
 import { ALIYUN_REGIONS } from '../../../utils/mail'
 import { getCollection, updateRow } from '../../../utils/db'
 import { requirePermission } from '../../../utils/auth'
+import { invalidatePageCache } from '../../../utils/pageCache'
 
 interface ConfigBody {
   provider?: string
@@ -69,6 +70,7 @@ export default defineEventHandler(async (event) => {
     upsertSetting(key, incoming === '' ? fallback : incoming, isSecret)
   }
 
+  await invalidatePageCache(['public-settings'])
   return { ok: true }
 })
 

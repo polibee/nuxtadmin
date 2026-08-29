@@ -38,6 +38,7 @@ class MemoryKV implements KVDriver {
 
 class RedisKV implements KVDriver {
   kind = 'redis' as const
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ioredis types load only with the driver
   private client: any = null
 
   async init(config: CacheConfig): Promise<void> {

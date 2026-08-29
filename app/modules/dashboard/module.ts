@@ -1,6 +1,7 @@
 import WidgetStats from './widgets/WidgetStats.vue'
 import WidgetRevenueChart from './widgets/WidgetRevenueChart.vue'
 import WidgetRecentOrders from './widgets/WidgetRecentOrders.vue'
+import CacheMonitor from './widgets/CacheMonitor.vue'
 
 export default defineModule({
   name: 'dashboard',
@@ -8,6 +9,7 @@ export default defineModule({
   widgets: [
     { name: 'stats-overview', span: 4, order: 1, component: WidgetStats },
     { name: 'revenue-chart', label: 'Weekly Revenue', span: 2, order: 2, component: WidgetRevenueChart },
-    { name: 'recent-orders', label: 'Recent Orders', span: 2, order: 3, component: WidgetRecentOrders }
+    { name: 'recent-orders', label: 'Recent Orders', span: 2, order: 3, component: WidgetRecentOrders },
+    { name: 'cache-monitor', label: 'Cache Monitor', span: 2, order: 4, component: CacheMonitor }
   ]
 })

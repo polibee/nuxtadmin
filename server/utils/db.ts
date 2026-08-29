@@ -1,5 +1,5 @@
 import { createError } from 'h3'
-import { persistRemoval, persistUpsert } from './store'
+import { persistUpsert } from './store'
 import type { Paginated } from '#shared/types/api'
 
 /* =============================================================

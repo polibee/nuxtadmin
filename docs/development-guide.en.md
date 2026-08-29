@@ -338,6 +338,23 @@ serving layer (zero API churn) while SQL drivers provide durability and boot-tim
   DB_USER/DB_PASSWORD/DB_SSL/SEED_DEMO/CACHE_DRIVER/REDIS_URL/REDIS_HOST/REDIS_PORT/
   REDIS_PASSWORD/REDIS_DB.
 
+### 4.22 Page Cache & Monitoring (WP Super Cache pattern)
+
+Public GET surfaces (`/sitemap.xml`, `/rss.xml`, `/api/public-settings`) are wrapped with
+`withPageCache(key, produce)`: bodies live in the KV layer (memory / Redis - shared across
+instances when Redis is configured), default TTLs 300s for sitemap/rss and 600s for
+public-settings (`server/utils/pageCache.ts`).
+
+- **Invalidation**: self-registered event listeners - any content lifecycle event purges
+  `sitemap`+`rss`; settings writes purge `public-settings`; mail/database config writes do
+  the same. Direct API: `invalidatePageCache(keys?)`.
+- **Switch**: `PAGE_CACHE_ENABLED` env var or settings key (enabled by default).
+- **Monitoring**: `GET /api/admin/cache/stats` (hit rate/hits/misses/time saved/entries/
+  per-key stats) and `POST /api/admin/cache/clear` (`settings.edit`). The dashboard ships a
+  "Cache Monitor" widget: hit-rate donut, per-key bars, clear button, 10s auto-poll.
+- New public endpoints: wrap with `withPageCache('my-key', …)` and invalidate on content
+  changes.
+
 ### 4.20 Rich Text Editor (Tiptap) Extension Guide
 
 `richtext` is rendered by `admin/framework/RichTextEditor.vue` (Tiptap v3 + StarterKit + Image/TaskList/TextAlign/Highlight/TextStyle+Color/Sub/Superscript/CharacterCount/Placeholder/Table family) and stores standard HTML.

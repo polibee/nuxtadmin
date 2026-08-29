@@ -1,5 +1,4 @@
-import type { DbConfig } from './runtimeConfig'
-import { buildConnectionString } from './runtimeConfig'
+import { buildConnectionString, type DbConfig } from './runtimeConfig'
 
 /* =============================================================
  * Storage adapter: persists the in-memory collections to SQL and
@@ -40,6 +39,7 @@ class MemoryStore implements StoreDriver {
 
 class PostgresStore implements StoreDriver {
   kind = 'postgres' as const
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- driver ships its own optional types
   private client: any = null
 
   constructor(private config: DbConfig) {}
@@ -91,6 +91,7 @@ class PostgresStore implements StoreDriver {
 
 class MysqlStore implements StoreDriver {
   kind = 'mysql' as const
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- driver ships its own optional types
   private pool: any = null
 
   constructor(private config: DbConfig) {}

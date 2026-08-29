@@ -1,6 +1,7 @@
 import type { DbDriver } from '../../../utils/runtimeConfig'
 import { readDbConfig } from '../../../utils/runtimeConfig'
 import { upsertSettingByKey } from '../../../utils/settingsStore'
+import { invalidatePageCache } from '../../../utils/pageCache'
 import { requirePermission } from '../../../utils/auth'
 
 interface ConfigBody {
@@ -54,5 +55,6 @@ export default defineEventHandler(async (event) => {
     await upsertSettingByKey(key, value)
   }
 
+  await invalidatePageCache(['public-settings'])
   return { ok: true, restartRequired: driver !== 'memory' || current.driver !== 'memory' }
 })

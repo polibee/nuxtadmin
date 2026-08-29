@@ -1,4 +1,4 @@
-import { buildConnectionString, readDbConfig, readCacheConfig } from '../../../utils/runtimeConfig'
+import { readDbConfig, readCacheConfig } from '../../../utils/runtimeConfig'
 import { testStoreConnection } from '../../../utils/store'
 import { testCacheConnection } from '../../../utils/kv'
 import { upsertSettingByKey } from '../../../utils/settingsStore'
