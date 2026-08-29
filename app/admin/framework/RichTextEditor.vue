@@ -96,37 +96,59 @@ watch(() => props.disabled, (disabled) => {
   editor.value?.setEditable(!disabled)
 })
 
-function promptLink(): void {
+/* ---------------- modern prompt dialog (link / image / color) ---------------- */
+
+const promptOpen = ref(false)
+const promptKind = ref<'link' | 'image' | 'color'>('link')
+const promptUrl = ref('')
+const promptAlt = ref('')
+const promptColorHex = ref('#d64545')
+
+function openLink(): void {
   const e = editor.value
   if (!e) return
   if (e.isActive('link')) {
     e.chain().focus().unsetLink().run()
     return
   }
-  const url = window.prompt('Link URL (https://…)')
-  if (url === null) return
-  if (url === '') {
-    e.chain().focus().extendMarkRange('link').unsetLink().run()
-    return
+  promptKind.value = 'link'
+  promptUrl.value = String(e.getAttributes('link').href ?? '')
+  promptOpen.value = true
+}
+
+function openImage(): void {
+  promptKind.value = 'image'
+  promptUrl.value = ''
+  promptAlt.value = ''
+  promptOpen.value = true
+}
+
+function openColor(): void {
+  promptKind.value = 'color'
+  promptColorHex.value = '#d64545'
+  promptOpen.value = true
+}
+
+const promptValid = computed(() =>
+  promptKind.value === 'color' || /^https?:\/\/.+/.test(promptUrl.value.trim())
+)
+
+function applyPrompt(): void {
+  const e = editor.value
+  if (!e || !promptValid.value) return
+  if (promptKind.value === 'link') {
+    e.chain().focus().extendMarkRange('link').setLink({ href: promptUrl.value.trim() }).run()
+  } else if (promptKind.value === 'image') {
+    e.chain().focus().setImage({ src: promptUrl.value.trim(), alt: promptAlt.value || undefined }).run()
+  } else {
+    e.chain().focus().setColor(promptColorHex.value).run()
   }
-  e.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+  promptOpen.value = false
 }
 
-function promptImage(): void {
-  const e = editor.value
-  if (!e) return
-  const url = window.prompt('Image URL (https://…)')
-  if (!url) return
-  e.chain().focus().setImage({ src: url }).run()
-}
-
-function promptColor(): void {
-  const e = editor.value
-  if (!e) return
-  const color = window.prompt('Text color (hex, e.g. #d64545)')
-  if (!color) return
-  e.chain().focus().setColor(color).run()
-}
+const promptTitle = computed(() =>
+  promptKind.value === 'link' ? 'Insert link' : promptKind.value === 'image' ? 'Insert image' : 'Text color'
+)
 
 function insertTable(): void {
   editor.value?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
@@ -181,11 +203,11 @@ const groups = computed<ToolGroup[]>(() => {
     ] },
     { buttons: [
       { label: 'Highlight', icon: HighlighterIcon, active: e.isActive('highlight'), run: () => chain().toggleHighlight().run() },
-      { label: 'Text color', icon: PaletteIcon, run: promptColor }
+      { label: 'Text color', icon: PaletteIcon, run: openColor }
     ] },
     { buttons: [
-      { label: 'Link', icon: Link2Icon, active: e.isActive('link'), run: promptLink },
-      { label: 'Image', icon: ImagePlusIcon, run: promptImage },
+      { label: 'Link', icon: Link2Icon, active: e.isActive('link'), run: openLink },
+      { label: 'Image', icon: ImagePlusIcon, run: openImage },
       { label: 'Divider', icon: MinusIcon, run: () => chain().setHorizontalRule().run() }
     ] },
     { buttons: [
@@ -236,5 +258,105 @@ const groups = computed<ToolGroup[]>(() => {
       :editor="editor"
       class="min-h-40 [&_.ProseMirror_a]:text-primary [&_.ProseMirror_a]:underline [&_.ProseMirror_blockquote]:border-l-2 [&_.ProseMirror_blockquote]:pl-3 [&_.ProseMirror_blockquote]:text-muted-foreground [&_.ProseMirror_h2]:mt-4 [&_.ProseMirror_h2]:text-lg [&_.ProseMirror_h2]:font-semibold [&_.ProseMirror_h3]:mt-3 [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_hr]:my-3 [&_.ProseMirror_img]:max-w-full [&_.ProseMirror_ol]:my-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-5 [&_.ProseMirror_p]:my-2 [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)] [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:h-0 [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-muted-foreground [&_.ProseMirror]:outline-none [&_.ProseMirror]:p-3 [&_.ProseMirror]:text-sm [&_.ProseMirror_.selectedCell]:bg-primary/10 [&_.ProseMirror_pre]:rounded-md [&_.ProseMirror_pre]:bg-muted [&_.ProseMirror_pre]:p-3 [&_.ProseMirror_strong]:font-semibold [&_.ProseMirror_table]:w-full [&_.ProseMirror_table]:border-collapse [&_.ProseMirror_td]:border [&_.ProseMirror_td]:p-1.5 [&_.ProseMirror_th]:border [&_.ProseMirror_th]:bg-muted/50 [&_.ProseMirror_th]:p-1.5 [&_.ProseMirror_th]:text-left [&_.ProseMirror_ul_[data-type=taskList]]:list-none [&_.ProseMirror_ul_[data-type=taskList]]:pl-1 [&_.ProseMirror_ul]:my-2 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5"
     />
+
+    <!-- insert dialog (link / image / color) -->
+    <DialogRoot
+      :open="promptOpen"
+      @update:open="(v: boolean) => (promptOpen = v)"
+    >
+      <DialogPortal>
+        <DialogOverlay class="fixed inset-0 z-50 bg-black/60" />
+        <DialogContent class="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-card p-5 shadow-lg focus:outline-none">
+          <DialogTitle class="text-sm font-semibold">
+            {{ promptTitle }}
+          </DialogTitle>
+
+          <form
+            class="mt-4 space-y-4"
+            @submit.prevent="applyPrompt"
+          >
+            <div
+              v-if="promptKind !== 'color'"
+              class="space-y-1.5"
+            >
+              <UiLabel for="editor-prompt-url">
+                {{ promptKind === 'link' ? 'URL' : 'Image URL' }}
+              </UiLabel>
+              <UiInput
+                id="editor-prompt-url"
+                v-model="promptUrl"
+                placeholder="https://…"
+              />
+              <p
+                v-if="promptUrl && !promptValid"
+                class="text-xs text-destructive"
+              >
+                Must start with http:// or https://
+              </p>
+            </div>
+
+            <div
+              v-if="promptKind === 'image'"
+              class="space-y-1.5"
+            >
+              <UiLabel for="editor-prompt-alt">
+                Alt text (optional)
+              </UiLabel>
+              <UiInput
+                id="editor-prompt-alt"
+                v-model="promptAlt"
+                placeholder="Describe the image"
+              />
+            </div>
+
+            <div
+              v-if="promptKind === 'color'"
+              class="space-y-2"
+            >
+              <div class="flex items-center gap-3">
+                <input
+                  v-model="promptColorHex"
+                  type="color"
+                  class="h-9 w-14 cursor-pointer rounded-md border border-input bg-transparent p-1"
+                >
+                <UiInput
+                  v-model="promptColorHex"
+                  class="flex-1 font-mono text-xs"
+                />
+              </div>
+              <div class="flex gap-1.5">
+                <button
+                  v-for="swatch in ['#111111', '#d64545', '#d97706', '#16a34a', '#2563eb', '#7c3aed']"
+                  :key="swatch"
+                  type="button"
+                  class="h-6 w-6 rounded-full border border-border transition-transform hover:scale-110"
+                  :style="{ background: swatch }"
+                  :aria-label="`Set color ${swatch}`"
+                  @click="promptColorHex = swatch"
+                />
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-2 border-t pt-4">
+              <UiButton
+                type="button"
+                variant="outline"
+                size="sm"
+                @click="promptOpen = false"
+              >
+                Cancel
+              </UiButton>
+              <UiButton
+                type="submit"
+                size="sm"
+                :disabled="!promptValid"
+              >
+                Apply
+              </UiButton>
+            </div>
+          </form>
+        </DialogContent>
+      </DialogPortal>
+    </DialogRoot>
   </div>
 </template>

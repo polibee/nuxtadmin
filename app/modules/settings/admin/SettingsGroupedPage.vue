@@ -2,6 +2,7 @@
 import { DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 import type { Paginated } from '#shared/types/api'
 import SettingsGroupForm, { type SettingItem } from './SettingsGroupForm.vue'
+import EmailSettingsPanel from './EmailSettingsPanel.vue'
 
 defineProps<{ resource: { name: string } }>()
 
@@ -148,9 +149,16 @@ function openAdd(group: string): void {
         :tabs="groups.map(g => ({ value: g.label, label: `${g.label} (${g.items.length})` }))"
       />
 
+      <!-- dedicated provider config panel for the Email group -->
+      <EmailSettingsPanel
+        v-if="activeTab === 'Email'"
+        class="mt-4"
+        @change="version++"
+      />
+
       <SettingsGroupForm
         v-for="g in groups"
-        v-show="activeTab === g.label"
+        v-show="activeTab === g.label && g.label !== 'Email'"
         :key="`${g.label}-${version}`"
         :group="g.label"
         :settings="g.items"

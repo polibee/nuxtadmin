@@ -1,0 +1,174 @@
+import { createTransport } from 'nodemailer'
+import { getCollection } from './db'
+
+/* =============================================================
+ * Mail service: three drivers behind one sendMail() contract.
+ *  - smtp:   any generic SMTP server (host/port/secure/user/pass)
+ *  - aliyun: Aliyun DirectMail via its SMTP endpoints (region presets,
+ *            smtpdm.aliyun.com / smtpdm-ap-southeast-1…, port 465 SSL)
+ *  - resend: Resend HTTP API (https://api.resend.com/emails)
+ * Provider credentials come from the settings collection (secret type)
+ * with environment-variable overrides taking precedence:
+ *   MAIL_PROVIDER, MAIL_FROM_NAME, MAIL_FROM_ADDRESS,
+ *   MAIL_SMTP_HOST, MAIL_SMTP_PORT, MAIL_SMTP_SECURE, MAIL_SMTP_USER,
+ *   MAIL_SMTP_PASS, MAIL_ALIYUN_REGION, MAIL_ALIYUN_SMTP_USER,
+ *   MAIL_ALIYUN_SMTP_PASS, MAIL_RESEND_API_KEY
+ * No credentials are ever written to source or logs.
+ * ============================================================= */
+
+export type MailProvider = 'smtp' | 'aliyun' | 'resend'
+
+export const ALIYUN_REGIONS: Record<string, { label: string, host: string }> = {
+  'cn-hangzhou': { label: '华东 1（杭州）', host: 'smtpdm.aliyun.com' },
+  'ap-southeast-1': { label: '新加坡', host: 'smtpdm-ap-southeast-1.aliyuncs.com' },
+  'us-east-1': { label: '美国（弗吉尼亚）', host: 'smtpdm-us-east-1.aliyuncs.com' },
+  'eu-central-1': { label: '德国（法兰克福）', host: 'smtpdm-eu-central-1.aliyuncs.com' }
+}
+
+export interface MailConfig {
+  provider: MailProvider
+  fromName: string
+  fromAddress: string
+  smtp: { host: string, port: number, secure: boolean, user: string, hasPass: boolean }
+  aliyun: { region: string, user: string, hasPass: boolean }
+  resend: { hasKey: boolean }
+}
+
+function setting(key: string, env: string | undefined, fallback = ''): string {
+  if (env) return env
+  const row = getCollection('settings').find(s => s.key === key)
+  if (row && row.type !== 'secret') return String(row.value ?? fallback)
+  return fallback
+}
+
+/** secret values are never echoed back; env wins over the stored value */
+function secret(key: string, env: string | undefined): string {
+  if (env) return env
+  const row = getCollection('settings').find(s => s.key === key)
+  return row ? String(row.value ?? '') : ''
+}
+
+export function getMailConfig(): MailConfig {
+  const provider = (setting('EMAIL_PROVIDER', process.env.MAIL_PROVIDER, 'smtp')) as MailProvider
+  return {
+    provider: ['smtp', 'aliyun', 'resend'].includes(provider) ? provider : 'smtp',
+    fromName: setting('EMAIL_FROM_NAME', process.env.MAIL_FROM_NAME),
+    fromAddress: setting('EMAIL_FROM_ADDRESS', process.env.MAIL_FROM_ADDRESS),
+    smtp: {
+      host: setting('EMAIL_SMTP_HOST', process.env.MAIL_SMTP_HOST),
+      port: Number(setting('EMAIL_SMTP_PORT', process.env.MAIL_SMTP_PORT, '465')) || 465,
+      secure: setting('EMAIL_SMTP_SECURE', process.env.MAIL_SMTP_SECURE, 'true') !== 'false',
+      user: setting('EMAIL_SMTP_USER', process.env.MAIL_SMTP_USER),
+      hasPass: secret('EMAIL_SMTP_PASS', process.env.MAIL_SMTP_PASS).length > 0
+    },
+    aliyun: {
+      region: setting('EMAIL_ALIYUN_REGION', process.env.MAIL_ALIYUN_REGION, 'cn-hangzhou'),
+      user: setting('EMAIL_ALIYUN_SMTP_USER', process.env.MAIL_ALIYUN_SMTP_USER),
+      hasPass: secret('EMAIL_ALIYUN_SMTP_PASS', process.env.MAIL_ALIYUN_SMTP_PASS).length > 0
+    },
+    resend: {
+      hasKey: secret('EMAIL_RESEND_API_KEY', process.env.MAIL_RESEND_API_KEY).length > 0
+    }
+  }
+}
+
+export interface MailResult {
+  ok: boolean
+  provider: MailProvider
+  id?: string
+  error?: string
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function validateFrom(config: MailConfig): string | null {
+  if (!EMAIL_RE.test(config.fromAddress)) {
+    return 'A valid "From" email address is required (EMAIL_FROM_ADDRESS)'
+  }
+  if (config.provider === 'smtp' && (!config.smtp.host || !config.smtp.user || !config.smtp.hasPass)) {
+    return 'SMTP host, user and password are required'
+  }
+  if (config.provider === 'aliyun' && (!config.aliyun.user || !config.aliyun.hasPass)) {
+    return 'Aliyun SMTP user (发信地址) and password are required'
+  }
+  if (config.provider === 'resend' && !config.resend.hasKey) {
+    return 'A Resend API key is required'
+  }
+  return null
+}
+
+async function sendViaNodemailer(config: MailConfig, host: string, port: number, secure: boolean, user: string, pass: string, to: string, subject: string, html: string): Promise<MailResult> {
+  try {
+    const transporter = createTransport({ host, port, secure, auth: { user, pass } })
+    const info = await transporter.sendMail({
+      from: config.fromName ? `"${config.fromName}" <${config.fromAddress}>` : config.fromAddress,
+      to,
+      subject,
+      html
+    })
+    return { ok: true, provider: config.provider, id: info.messageId }
+  } catch (e: unknown) {
+    return { ok: false, provider: config.provider, error: (e as Error).message }
+  }
+}
+
+async function sendViaResend(config: MailConfig, apiKey: string, to: string, subject: string, html: string): Promise<MailResult> {
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'authorization': `Bearer ${apiKey}`,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: config.fromName ? `${config.fromName} <${config.fromAddress}>` : config.fromAddress,
+        to: [to],
+        subject,
+        html
+      }),
+      signal: AbortSignal.timeout(10_000)
+    })
+    const data = await response.json().catch(() => ({}) as Record<string, unknown>)
+    if (!response.ok) {
+      const message = typeof data.message === 'string' ? data.message : `HTTP ${response.status}`
+      return { ok: false, provider: 'resend', error: message }
+    }
+    return { ok: true, provider: 'resend', id: String(data.id ?? '') }
+  } catch (e: unknown) {
+    return { ok: false, provider: 'resend', error: (e as Error).message }
+  }
+}
+
+export async function sendMail(to: string, subject: string, html: string): Promise<MailResult> {
+  if (!EMAIL_RE.test(to)) {
+    return { ok: false, provider: getMailConfig().provider, error: `"${to}" is not a valid recipient address` }
+  }
+
+  const config = getMailConfig()
+  const configError = validateFrom(config)
+  if (configError) {
+    return { ok: false, provider: config.provider, error: configError }
+  }
+
+  if (config.provider === 'resend') {
+    const key = secret('EMAIL_RESEND_API_KEY', process.env.MAIL_RESEND_API_KEY)
+    return sendViaResend(config, key, to, subject, html)
+  }
+
+  if (config.provider === 'aliyun') {
+    const region = ALIYUN_REGIONS[config.aliyun.region] ?? ALIYUN_REGIONS['cn-hangzhou']!
+    return sendViaNodemailer(
+      config, region.host, 465, true,
+      config.aliyun.user,
+      secret('EMAIL_ALIYUN_SMTP_PASS', process.env.MAIL_ALIYUN_SMTP_PASS),
+      to, subject, html
+    )
+  }
+
+  return sendViaNodemailer(
+    config, config.smtp.host, config.smtp.port, config.smtp.secure,
+    config.smtp.user,
+    secret('EMAIL_SMTP_PASS', process.env.MAIL_SMTP_PASS),
+    to, subject, html
+  )
+}
