@@ -38,11 +38,14 @@ if (!id && !resource.table) {
   throw createError({ statusCode: 400, statusMessage: `Resource "${resource.name}" does not define a table schema.`, fatal: true })
 }
 
+/* resource page overrides (admin extension point), e.g. grouped settings */
+const listOverride = resource.pages?.list
+
 let component: Component | null = null
 const bind = reactive<Record<string, unknown>>({ resource })
 
 if (!id) {
-  component = ResourceListPage
+  component = listOverride ?? ResourceListPage
 } else if (id === 'create') {
   if (!allow(`${resource.permissionPrefix}.create`)) {
     throw createError({ statusCode: 403, statusMessage: 'Create permission required.', fatal: true })

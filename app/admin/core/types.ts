@@ -120,14 +120,14 @@ export interface ActionDef {
     description?: string
     confirmLabel?: string
   }
-  /** optional modal form schema resolved before handler runs */
-  form?: () => SchemaNode[]
+  /** optional modal form schema, resolved with the action context (record-aware) */
+  form?: (ctx: ActionContext) => SchemaNode[]
   handler?: (ctx: ActionContext) => Promise<void> | void
   visible?: (record: Record<string, unknown>) => boolean
 }
 
 export interface ColumnMeta {
-  kind: 'text' | 'number' | 'money' | 'date' | 'badge' | 'boolean' | 'actions' | 'image' | 'tags'
+  kind: 'text' | 'number' | 'money' | 'date' | 'badge' | 'boolean' | 'actions' | 'image' | 'tags' | 'tree'
   sortable?: boolean
   align?: 'left' | 'center' | 'right'
   badges?: Record<string | number, BadgeStyle>
@@ -175,6 +175,8 @@ export interface AdminResource {
   searchable?: string[]
   /** endpoint overrides, e.g. multipart upload for media */
   endpoints?: { create?: string }
+  /** per-resource page overrides (admin extension point) */
+  pages?: { list?: Component }
   form?: () => SchemaNode[]
   table?: () => ColumnDefLite[]
   infolist?: () => EntryNode[]

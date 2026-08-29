@@ -55,3 +55,8 @@ export function imageColumn(name: string, label: string, opts?: ColumnOptions): 
 export function tagsColumn(name: string, label: string, opts?: ColumnOptions): ColumnDefLite {
   return { name, label, meta: { kind: 'tags', ...opts } }
 }
+
+/** tree column: indents by record.depth + leaf/child glyph (needs server enrichList) */
+export function treeColumn(name: string, label: string, opts?: ColumnOptions): ColumnDefLite {
+  return { name, label, meta: { kind: 'tree', ...opts } }
+}

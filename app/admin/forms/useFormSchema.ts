@@ -32,5 +32,5 @@ export function useFormSchema(options: UseFormSchemaOptions) {
     }
   })
 
-  return { form, submit, submitting }
+  return { form, submit, submitting, setValues: form.setValues }
 }

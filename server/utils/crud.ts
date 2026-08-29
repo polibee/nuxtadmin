@@ -23,7 +23,9 @@ export function listResource(event: Evt, resource: string) {
     sortBy?: string
     sortDir?: string
   }
-  return applyQuery(resource, query, { searchable: cfg.searchable })
+  const result = applyQuery(resource, query, { searchable: cfg.searchable })
+  if (cfg.enrichList) result.items = cfg.enrichList(result.items)
+  return result
 }
 
 export async function readResource(event: Evt, resource: string, id: number) {
@@ -113,6 +115,12 @@ export async function deleteResource(event: Evt, resource: string, id: number) {
   requirePermission(event, `${cfg.permissionPrefix}.delete`)
 
   const before = findRow(resource, id)
+  if (cfg.beforeDelete) {
+    const message = cfg.beforeDelete(before)
+    if (message) {
+      throw createError({ statusCode: 409, statusMessage: message })
+    }
+  }
   await emitCmsEvent('content.beforeDelete', { resource, id, record: before })
   snapshotRevision(resource, before)
 

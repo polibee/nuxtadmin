@@ -75,6 +75,7 @@ function cellText(lite: ColumnDefLite, value: unknown): string {
   switch (m.kind) {
     case 'image': return ''
     case 'tags': return ''
+    case 'tree': return String(value ?? '-')
     case 'money': return formatMoney(value, m.prefix)
     case 'number': return formatNumber(value)
     case 'date': return formatDate(value)
@@ -300,6 +301,22 @@ function onExport(): void {
                   v-else-if="(cell.column.columnDef.meta as LiteMeta)?.lite?.meta.kind === 'image'"
                   class="text-muted-foreground"
                 >–</span>
+
+                <div
+                  v-else-if="(cell.column.columnDef.meta as LiteMeta)?.lite?.meta.kind === 'tree'"
+                  class="flex items-center gap-1.5 font-medium"
+                  :style="{ paddingLeft: `${(Number(cell.row.original.depth) || 0) * 20}px` }"
+                >
+                  <span
+                    v-if="Number(cell.row.original.childCount) > 0"
+                    class="text-muted-foreground"
+                  >▾</span>
+                  <span
+                    v-else
+                    class="text-muted-foreground"
+                  >·</span>
+                  {{ cellText((cell.column.columnDef.meta as LiteMeta).lite!, cell.getValue()) }}
+                </div>
 
                 <div
                   v-else-if="(cell.column.columnDef.meta as LiteMeta)?.lite?.meta.kind === 'tags'"

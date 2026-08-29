@@ -174,6 +174,93 @@ function seedMedia(): MediaRow[] {
   }))
 }
 
+export interface TaxonomyRow {
+  id: number
+  name: string
+  key: 'category' | 'tag'
+  slug: string
+  parentId: number | null
+}
+
+function seedTaxonomy(): TaxonomyRow[] {
+  const rows: TaxonomyRow[] = [
+    { id: 1, name: 'Technology', key: 'category', slug: 'technology', parentId: null },
+    { id: 2, name: 'AI', key: 'category', slug: 'ai', parentId: 1 },
+    { id: 3, name: 'LLM', key: 'category', slug: 'llm', parentId: 2 },
+    { id: 4, name: 'Computer Vision', key: 'category', slug: 'computer-vision', parentId: 2 },
+    { id: 5, name: 'GPU', key: 'category', slug: 'gpu', parentId: 1 },
+    { id: 6, name: 'Design', key: 'category', slug: 'design', parentId: null },
+    { id: 7, name: 'Business', key: 'category', slug: 'business', parentId: null },
+    { id: 8, name: 'startup', key: 'tag', slug: 'startup', parentId: null },
+    { id: 9, name: 'tutorial', key: 'tag', slug: 'tutorial', parentId: null },
+    { id: 10, name: 'release', key: 'tag', slug: 'release', parentId: null }
+  ]
+  return rows
+}
+
+export interface MenuItem {
+  label: string
+  url: string
+  children?: MenuItem[]
+}
+
+export interface MenuRow {
+  id: number
+  name: string
+  location: 'header' | 'footer' | 'custom'
+  items: MenuItem[]
+}
+
+function seedMenus(): MenuRow[] {
+  return [
+    {
+      id: 1,
+      name: 'Main Navigation',
+      location: 'header',
+      items: [
+        { label: 'Home', url: '/' },
+        { label: 'Blog', url: '/blog', children: [
+          { label: 'Technology', url: '/blog/technology' },
+          { label: 'Design', url: '/blog/design' }
+        ] },
+        { label: 'About', url: '/about' }
+      ]
+    },
+    {
+      id: 2,
+      name: 'Footer',
+      location: 'footer',
+      items: [
+        { label: 'Privacy', url: '/privacy' },
+        { label: 'Terms', url: '/terms' }
+      ]
+    }
+  ]
+}
+
+export interface SettingRow {
+  id: number
+  key: string
+  value: string | number | boolean
+  type: 'string' | 'text' | 'number' | 'boolean' | 'secret'
+  group: string
+  public: boolean
+  description?: string
+}
+
+function seedSettings(): SettingRow[] {
+  return [
+    { id: 1, key: 'SITE_NAME', value: 'Nuxt Admin', type: 'string', group: 'General', public: true, description: 'Shown in the site header and <title>.' },
+    { id: 2, key: 'SITE_URL', value: 'https://example.com', type: 'string', group: 'General', public: true, description: 'Canonical origin of the site.' },
+    { id: 3, key: 'SITE_DESCRIPTION', value: 'A Strapi-class CMS built on Nuxt.', type: 'text', group: 'General', public: true },
+    { id: 4, key: 'POSTS_PER_PAGE', value: 12, type: 'number', group: 'Blog', public: true },
+    { id: 5, key: 'SMTP_HOST', value: 'smtp.internal.example', type: 'string', group: 'Email', public: false },
+    { id: 6, key: 'SMTP_PASSWORD', value: 'demo-password-123', type: 'secret', group: 'Email', public: false, description: 'Never exposed by the public settings endpoint.' },
+    { id: 7, key: 'CACHE_DRIVER', value: 'memory', type: 'string', group: 'Cache', public: false },
+    { id: 8, key: 'MAINTENANCE_MODE', value: false, type: 'boolean', group: 'General', public: true }
+  ]
+}
+
 /* ---------------- collection registry ---------------- */
 
 type AnyRow = Record<string, unknown>
@@ -186,7 +273,10 @@ const SEEDED: Record<string, AnyRow[]> = {
   'media': seedMedia() as unknown as AnyRow[],
   'content-types': [],
   'revisions': [],
-  'webhooks': []
+  'webhooks': [],
+  'taxonomy': seedTaxonomy() as unknown as AnyRow[],
+  'menus': seedMenus() as unknown as AnyRow[],
+  'settings': seedSettings() as unknown as AnyRow[]
 }
 
 const collections = new Map<string, AnyRow[]>(Object.entries(SEEDED))

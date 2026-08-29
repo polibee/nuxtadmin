@@ -9,7 +9,7 @@ import { getCollection } from './db'
 import { parseWebhookTarget } from './webhook'
 
 interface FieldConfig {
-  type: 'string' | 'number' | 'boolean' | 'list'
+  type: 'string' | 'number' | 'boolean' | 'list' | 'any'
   required?: boolean
   enum?: string[]
 }
@@ -24,6 +24,10 @@ export interface ServerResourceConfig {
   immutableFields?: string[]
   /** extra record-level validation after field coercion (create & update) */
   validateRecord?: (data: Record<string, unknown>) => string | null
+  /** decorate list rows before they are returned (tree depth, counts, masking…) */
+  enrichList?: (items: Array<Record<string, unknown>>) => Array<Record<string, unknown>>
+  /** veto delete; return an error message to block */
+  beforeDelete?: (record: Record<string, unknown>) => string | null
 }
 
 export const RESOURCE_CONFIGS: Record<string, ServerResourceConfig> = {
@@ -132,6 +136,85 @@ export const RESOURCE_CONFIGS: Record<string, ServerResourceConfig> = {
       version: { type: 'number' },
       data: { type: 'list' }
     }
+  },
+  'taxonomy': {
+    label: 'Taxonomy Term',
+    searchable: ['name', 'slug'],
+    permissionPrefix: 'taxonomy',
+    fields: {
+      name: { type: 'string', required: true },
+      key: { type: 'string', enum: ['category', 'tag'] },
+      slug: { type: 'string' },
+      parentId: { type: 'number' }
+    },
+    beforeDelete: (record) => {
+      const children = getCollection('taxonomy').filter(t => t.parentId === record.id)
+      return children.length > 0
+        ? `Cannot delete "${String(record.name)}": ${children.length} child term(s) reference it. Reassign or delete them first.`
+        : null
+    },
+    enrichList: (items) => {
+      const byId = new Map(items.map(r => [r.id, r]))
+      const depthOf = (row: Record<string, unknown>, guard: number): number => {
+        if (guard > 20) return 0
+        const parentId = row.parentId as number | null | undefined
+        if (parentId == null) return 0
+        const parent = byId.get(parentId)
+        return parent ? 1 + depthOf(parent, guard + 1) : 0
+      }
+      const pathOf = (row: Record<string, unknown>, guard: number): string => {
+        if (guard > 20) return ''
+        const parentId = row.parentId as number | null | undefined
+        if (parentId == null) return String(row.name ?? '')
+        const parent = byId.get(parentId)
+        return parent ? `${pathOf(parent, guard + 1)} / ${String(row.name ?? '')}` : String(row.name ?? '')
+      }
+      const decorated = items.map((row) => {
+        const childCount = items.filter(r => r.parentId === row.id).length
+        return { ...row, depth: depthOf(row, 0), path: pathOf(row, 0), childCount }
+      })
+      // tree order: sort by path so children follow their parent
+      return decorated.sort((a, b) => String(a.path).localeCompare(String(b.path)))
+    }
+  },
+  'menus': {
+    label: 'Menu',
+    searchable: ['name'],
+    permissionPrefix: 'menus',
+    fields: {
+      name: { type: 'string', required: true },
+      location: { type: 'string', enum: ['header', 'footer', 'custom'] },
+      items: { type: 'list' }
+    },
+    enrichList: (items) => {
+      const countItems = (node: unknown): number => {
+        if (!node || typeof node !== 'object') return 0
+        const item = node as { children?: unknown[] }
+        const children = Array.isArray(item.children) ? item.children : []
+        return 1 + children.reduce((n: number, c: unknown) => n + countItems(c), 0)
+      }
+      return items.map((row) => {
+        const itemsList = Array.isArray(row.items) ? row.items : []
+        return { ...row, itemCount: itemsList.reduce((n: number, c: unknown) => n + countItems(c), 0) }
+      })
+    }
+  },
+  'settings': {
+    label: 'Setting',
+    searchable: ['key', 'group'],
+    permissionPrefix: 'settings',
+    immutableFields: ['key'],
+    fields: {
+      key: { type: 'string', required: true },
+      value: { type: 'any' },
+      type: { type: 'string', enum: ['string', 'text', 'number', 'boolean', 'secret'] },
+      group: { type: 'string', required: true },
+      public: { type: 'boolean' },
+      description: { type: 'string' }
+    },
+    enrichList: items => items.map(row => (
+      row.type === 'secret' ? { ...row, value: '••••••••' } : row
+    ))
   }
 }
 
@@ -190,6 +273,21 @@ type ValidateResult
   = | { ok: true, data: Record<string, unknown> }
     | { ok: false, message: string }
 
+/** recursive sanitizer for list-typed values: primitives stay, objects keep primitive props */
+function sanitizeListItem(item: unknown): unknown {
+  if (item === null || typeof item !== 'object') return item
+  if (Array.isArray(item)) return item.map(sanitizeListItem)
+  const clean: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(item as Record<string, unknown>)) {
+    if (v === null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+      clean[k] = v
+    } else if (Array.isArray(v)) {
+      clean[k] = v.map(sanitizeListItem)
+    }
+  }
+  return clean
+}
+
 /** create = full validation (required enforced); update = partial */
 export function validateInput(
   name: string,
@@ -230,17 +328,16 @@ export function validateInput(
 
     if (rule.type === 'list') {
       if (!Array.isArray(value)) return { ok: false, message: `"${field}" must be an array` }
-      // sanitize: primitives stay as-is; objects keep only primitive props
-      data[field] = value.map((item) => {
-        if (item === null || typeof item !== 'object') return item
-        const clean: Record<string, unknown> = {}
-        for (const [k, v] of Object.entries(item as Record<string, unknown>)) {
-          if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
-            clean[k] = v
-          }
-        }
-        return clean
-      })
+      data[field] = value.map(sanitizeListItem)
+      continue
+    }
+
+    if (rule.type === 'any') {
+      if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        data[field] = value
+      } else {
+        return { ok: false, message: `"${field}" must be a string, number or boolean` }
+      }
       continue
     }
 

@@ -82,7 +82,7 @@ const isDestructive = computed(() => runner.confirmTarget?.action.variant === 'd
         <div class="mt-4">
           <ActionFormModal
             :key="runner.formTarget.action.name"
-            :schema="runner.formTarget.action.form!()"
+            :schema="runner.formTarget.action.form?.(runner.formTarget.ctx) ?? []"
             :initial="runner.formTarget.ctx.record"
             :busy="runner.busy"
             @submit="values => runner.execute(runner.formTarget!.action, runner.formTarget!.ctx, values)"
