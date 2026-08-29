@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
+import {
+  DialogContent,
+  DialogOverlay,
+  DialogPortal,
+  DialogRoot,
+  DialogTitle
+} from 'reka-ui'
 import Image from '@tiptap/extension-image'
 import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
@@ -137,7 +144,18 @@ function applyPrompt(): void {
   const e = editor.value
   if (!e || !promptValid.value) return
   if (promptKind.value === 'link') {
-    e.chain().focus().extendMarkRange('link').setLink({ href: promptUrl.value.trim() }).run()
+    const href = promptUrl.value.trim()
+    const { from, to, empty } = e.state.selection
+    if (empty && !e.isActive('link')) {
+      // collapsed caret with no link: insert the URL as linked text
+      e.chain().focus().insertContent({
+        type: 'text',
+        text: href,
+        marks: [{ type: 'link', attrs: { href } }]
+      }).run()
+    } else {
+      e.chain().focus().setTextSelection({ from, to }).extendMarkRange('link').setLink({ href }).run()
+    }
   } else if (promptKind.value === 'image') {
     e.chain().focus().setImage({ src: promptUrl.value.trim(), alt: promptAlt.value || undefined }).run()
   } else {
@@ -244,6 +262,7 @@ const groups = computed<ToolGroup[]>(() => {
             'rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40',
             tool.active && 'bg-primary/10 text-primary'
           )"
+          @mousedown.prevent
           @click="tool.run()"
         >
           <component
