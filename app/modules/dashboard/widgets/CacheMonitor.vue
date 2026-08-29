@@ -28,9 +28,17 @@ async function load(): Promise<void> {
   }
 }
 
-onMounted(load)
-const timer = setInterval(load, 10_000)
-onUnmounted(() => clearInterval(timer))
+let pollTimer: ReturnType<typeof setInterval> | null = null
+
+onMounted(() => {
+  load()
+  // poll only in the browser - SSR guards against server-side timers
+  pollTimer = setInterval(load, 10_000)
+})
+
+onUnmounted(() => {
+  if (pollTimer) clearInterval(pollTimer)
+})
 
 async function clearCache(): Promise<void> {
   await $fetch('/api/admin/cache/clear', { method: 'POST' })
